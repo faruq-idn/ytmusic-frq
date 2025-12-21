@@ -2,6 +2,7 @@ package com.frq.ytmusic.presentation.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,7 +38,8 @@ import coil.compose.AsyncImage
 @Composable
 fun MiniPlayer(
     modifier: Modifier = Modifier,
-    viewModel: PlayerViewModel = hiltViewModel()
+    viewModel: PlayerViewModel = hiltViewModel(),
+    onExpand: () -> Unit // Callback for expansion
 ) {
     val playerState by viewModel.playerState.collectAsState()
     val song = playerState.currentSong
@@ -45,7 +49,7 @@ fun MiniPlayer(
             modifier = modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable { /* TODO: Expand player */ }
+                .clickable { onExpand() }
         ) {
             // Progress Bar
             if (playerState.isLoading) {
@@ -102,11 +106,42 @@ fun MiniPlayer(
                 }
 
                 // Controls
-                IconButton(onClick = { viewModel.togglePlayPause() }) {
-                    Icon(
-                        imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (playerState.isPlaying) "Pause" else "Play"
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Previous Button
+                    IconButton(
+                        onClick = { viewModel.playPrevious() },
+                        enabled = playerState.hasPrevious
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SkipPrevious,
+                            contentDescription = "Previous",
+                            tint = if (playerState.hasPrevious) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
+
+                    // Play/Pause Button
+                    IconButton(onClick = { viewModel.togglePlayPause() }) {
+                        Icon(
+                            imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (playerState.isPlaying) "Pause" else "Play",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    // Next Button
+                    IconButton(
+                        onClick = { viewModel.playNext() },
+                        enabled = playerState.hasNext
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SkipNext,
+                            contentDescription = "Next",
+                            tint = if (playerState.hasNext) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
                 }
             }
         }
