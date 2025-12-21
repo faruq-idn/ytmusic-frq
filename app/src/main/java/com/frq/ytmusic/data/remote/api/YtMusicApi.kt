@@ -8,6 +8,7 @@ import com.frq.ytmusic.data.remote.dto.StreamDataDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 /**
  * Retrofit API interface for YT Music backend.
@@ -47,4 +48,14 @@ interface YtMusicApi {
         @Path("video_id") videoId: String,
         @Query("limit") limit: Int = 20
     ): ApiResponse<RelatedResponseDto>
+
+    /**
+     * Download audio file.
+     */
+    @Streaming
+    @GET("api/v1/download/{video_id}")
+    suspend fun downloadAudio(
+        @Path("video_id") videoId: String,
+        @Query("quality") quality: String = "best"
+    ): okhttp3.ResponseBody
 }

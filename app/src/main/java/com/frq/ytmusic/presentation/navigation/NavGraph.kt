@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.frq.ytmusic.data.local.entity.DownloadedSongEntity
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.presentation.downloads.DownloadsScreen
 import com.frq.ytmusic.presentation.library.LibraryScreen
 import com.frq.ytmusic.presentation.search.SearchScreen
 
@@ -14,7 +16,8 @@ import com.frq.ytmusic.presentation.search.SearchScreen
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    onSongClick: (List<Song>, Int) -> Unit
+    onSongClick: (List<Song>, Int) -> Unit,
+    onDownloadPlay: (DownloadedSongEntity) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -27,5 +30,13 @@ fun NavGraph(
         composable(Screen.Library.route) {
             LibraryScreen(onSongClick = onSongClick)
         }
+
+        composable(Screen.Downloads.route) {
+            DownloadsScreen(
+                onNavigateUp = { navController.navigateUp() },
+                onPlaySong = onDownloadPlay
+            )
+        }
     }
 }
+

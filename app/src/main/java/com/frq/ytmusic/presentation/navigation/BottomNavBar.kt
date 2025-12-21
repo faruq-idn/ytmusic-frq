@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.Download
 
 data class BottomNavItem(
     val screen: Screen,
@@ -27,7 +29,8 @@ data class BottomNavItem(
 
 val bottomNavItems = listOf(
     BottomNavItem(Screen.Search, "Search", Icons.Filled.Search, Icons.Outlined.Search),
-    BottomNavItem(Screen.Library, "Library", Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder)
+    BottomNavItem(Screen.Library, "Library", Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder),
+    BottomNavItem(Screen.Downloads, "Downloads", Icons.Filled.Download, Icons.Outlined.Download)
 )
 
 @Composable

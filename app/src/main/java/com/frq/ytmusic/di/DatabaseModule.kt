@@ -3,6 +3,7 @@ package com.frq.ytmusic.di
 import android.content.Context
 import androidx.room.Room
 import com.frq.ytmusic.data.local.YtMusicDatabase
+import com.frq.ytmusic.data.local.dao.DownloadedSongDao
 import com.frq.ytmusic.data.local.dao.FavoriteSongDao
 import dagger.Module
 import dagger.Provides
@@ -25,12 +26,20 @@ object DatabaseModule {
             context,
             YtMusicDatabase::class.java,
             "ytmusic_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideFavoriteSongDao(database: YtMusicDatabase): FavoriteSongDao {
         return database.favoriteSongDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDownloadedSongDao(database: YtMusicDatabase): DownloadedSongDao {
+        return database.downloadedSongDao()
     }
 }

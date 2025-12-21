@@ -6,4 +6,5 @@ package com.frq.ytmusic.presentation.navigation
 sealed class Screen(val route: String) {
     data object Search : Screen("search")
     data object Library : Screen("library")
+    data object Downloads : Screen("downloads")
 }

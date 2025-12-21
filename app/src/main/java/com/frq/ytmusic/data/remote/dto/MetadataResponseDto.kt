@@ -25,5 +25,5 @@ data class MetadataResponseDto(
     val hasLyrics: Boolean,
     
     @SerializedName("lyrics")
-    val lyrics: String?
+    val lyrics: LyricsDto?
 )

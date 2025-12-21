@@ -1,7 +1,9 @@
 package com.frq.ytmusic.di
 
+import com.frq.ytmusic.data.repository.DownloadRepositoryImpl
 import com.frq.ytmusic.data.repository.FavoritesRepositoryImpl
 import com.frq.ytmusic.data.repository.SongRepositoryImpl
+import com.frq.ytmusic.domain.repository.DownloadRepository
 import com.frq.ytmusic.domain.repository.FavoritesRepository
 import com.frq.ytmusic.domain.repository.SongRepository
 import dagger.Binds
@@ -28,4 +30,10 @@ abstract class RepositoryModule {
     abstract fun bindFavoritesRepository(
         impl: FavoritesRepositoryImpl
     ): FavoritesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDownloadRepository(
+        impl: DownloadRepositoryImpl
+    ): DownloadRepository
 }

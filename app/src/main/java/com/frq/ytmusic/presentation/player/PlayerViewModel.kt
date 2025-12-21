@@ -8,6 +8,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import com.frq.ytmusic.domain.model.QueueManager
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.domain.usecase.GetLyricsUseCase
 import com.frq.ytmusic.domain.usecase.GetRelatedSongsUseCase
 import com.frq.ytmusic.domain.usecase.GetStreamUrlUseCase
 import com.frq.ytmusic.domain.usecase.IsFavoriteUseCase
@@ -33,7 +34,12 @@ class PlayerViewModel @Inject constructor(
     private val getStreamUrlUseCase: GetStreamUrlUseCase,
     private val getRelatedSongsUseCase: GetRelatedSongsUseCase,
     private val isFavoriteUseCase: IsFavoriteUseCase,
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
+    private val getLyricsUseCase: GetLyricsUseCase,
+    private val downloadSongUseCase: com.frq.ytmusic.domain.usecase.DownloadSongUseCase,
+    private val deleteDownloadUseCase: com.frq.ytmusic.domain.usecase.DeleteDownloadUseCase,
+    private val isDownloadedUseCase: com.frq.ytmusic.domain.usecase.IsDownloadedUseCase,
+    private val downloadRepository: com.frq.ytmusic.domain.repository.DownloadRepository
 ) : ViewModel() {
 
     private val _playerState = MutableStateFlow(PlayerState())
@@ -45,6 +51,7 @@ class PlayerViewModel @Inject constructor(
     private val queueManager = QueueManager()
     private var currentPlayerListener: Player.Listener? = null
     private var favoriteObserverJob: kotlinx.coroutines.Job? = null
+    private var downloadObserverJob: kotlinx.coroutines.Job? = null
 
     init {
         serviceConnection.connect()
@@ -182,6 +189,8 @@ class PlayerViewModel @Inject constructor(
         
         // Observe favorite status for new song
         observeFavoriteStatus(song.videoId)
+        loadLyrics(song.videoId)
+        observeDownloadStatus(song.videoId)
         
         viewModelScope.launch {
             _playerState.update { 
@@ -291,6 +300,27 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    private fun observeDownloadStatus(videoId: String) {
+        downloadObserverJob?.cancel()
+        downloadObserverJob = viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                downloadRepository.downloadState,
+                isDownloadedUseCase(videoId)
+            ) { globalState, isDownloaded ->
+                val currentState = globalState
+                when {
+                    currentState is com.frq.ytmusic.data.local.DownloadState.Downloading && currentState.videoId == videoId -> currentState
+                    currentState is com.frq.ytmusic.data.local.DownloadState.Error && currentState.videoId == videoId -> currentState
+                    currentState is com.frq.ytmusic.data.local.DownloadState.Completed && currentState.videoId == videoId -> currentState
+                    isDownloaded -> com.frq.ytmusic.data.local.DownloadState.Completed(videoId)
+                    else -> com.frq.ytmusic.data.local.DownloadState.Idle
+                }
+            }.collect { state ->
+                _playerState.update { it.copy(downloadState = state) }
+            }
+        }
+    }
+
     fun toggleFavorite() {
         val song = _playerState.value.currentSong ?: return
         viewModelScope.launch {
@@ -298,9 +328,47 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun toggleDownload() {
+        val song = _playerState.value.currentSong ?: return
+        val currentState = _playerState.value.downloadState
+        
+        viewModelScope.launch {
+            if (currentState is com.frq.ytmusic.data.local.DownloadState.Completed) {
+                deleteDownloadUseCase(song.videoId)
+            } else if (currentState is com.frq.ytmusic.data.local.DownloadState.Idle || currentState is com.frq.ytmusic.data.local.DownloadState.Error) {
+                downloadSongUseCase(song)
+            }
+            // Downloading state clicks are ignored or could be cancel
+        }
+    }
+
+    fun toggleLyricsVisibility() {
+        _playerState.update { it.copy(isLyricsVisible = !it.isLyricsVisible) }
+    }
+
+    fun seekTo(positionMs: Long) {
+        serviceConnection.controller.value?.let { controller ->
+            controller.seekTo(positionMs)
+        }
+    }
+
+    private fun loadLyrics(videoId: String) {
+        viewModelScope.launch {
+            _playerState.update { it.copy(isLyricsLoading = true, lyrics = null) }
+            getLyricsUseCase(videoId)
+                .onSuccess { lyrics ->
+                    _playerState.update { it.copy(lyrics = lyrics, isLyricsLoading = false) }
+                }
+                .onFailure {
+                    _playerState.update { it.copy(isLyricsLoading = false) }
+                }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         favoriteObserverJob?.cancel()
+        downloadObserverJob?.cancel()
         serviceConnection.controller.value?.let { controller ->
             currentPlayerListener?.let { controller.removeListener(it) }
         }

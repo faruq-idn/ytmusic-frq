@@ -22,7 +22,7 @@ import javax.inject.Singleton
 object NetworkModule {
 
     private const val CONNECT_TIMEOUT = 30L
-    private const val READ_TIMEOUT = 30L
+    private const val READ_TIMEOUT = 300L // 5 minutes for large downloads
     private const val WRITE_TIMEOUT = 30L
 
     @Provides

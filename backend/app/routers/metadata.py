@@ -30,7 +30,7 @@ async def get_metadata(video_id: str):
     if not metadata:
         raise HTTPException(status_code=404, detail="Song not found")
     
-    # Get lyrics
+    # Get lyrics (now returns structured LyricsData)
     lyrics = yt_music_service.get_lyrics(video_id)
     
     # Extract info from metadata
@@ -43,7 +43,7 @@ async def get_metadata(video_id: str):
         album=None,  # Not always available in get_song response
         duration_seconds=int(video_details.get("lengthSeconds", 0)),
         has_lyrics=lyrics is not None,
-        lyrics=lyrics
+        lyrics=lyrics.model_dump() if lyrics else None
     )
     
     return ApiResponse(success=True, data=response_data.model_dump())

@@ -53,6 +53,18 @@ fun MainScreen(
                 onSongClick = { songs, index ->
                     playerViewModel.playSongFromList(songs, index)
                     isPlayerExpanded = true
+                },
+                onDownloadPlay = { downloadedSong ->
+                    val song = com.frq.ytmusic.domain.model.Song(
+                        videoId = downloadedSong.videoId,
+                        title = downloadedSong.title,
+                        artist = downloadedSong.artist,
+                        album = null,
+                        durationText = downloadedSong.duration,
+                        thumbnailUrl = downloadedSong.thumbnailUrl
+                    )
+                    playerViewModel.playSong(song)
+                    isPlayerExpanded = true
                 }
             )
             

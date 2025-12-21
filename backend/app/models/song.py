@@ -1,7 +1,7 @@
 """
 Song-related models for YouTube Music data.
 """
-from typing import Optional, List
+from typing import Optional, List, Any
 from pydantic import BaseModel
 
 
@@ -44,7 +44,7 @@ class MetadataResponse(BaseModel):
     album: Optional[str] = None
     duration_seconds: int
     has_lyrics: bool
-    lyrics: Optional[str] = None
+    lyrics: Optional[Any] = None  # LyricsData dict or None
 
 
 class RelatedResponse(BaseModel):

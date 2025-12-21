@@ -1,5 +1,6 @@
 package com.frq.ytmusic.domain.repository
 
+import com.frq.ytmusic.domain.model.Lyrics
 import com.frq.ytmusic.domain.model.Song
 
 /**
@@ -39,5 +40,5 @@ data class SongMetadata(
     val album: String?,
     val durationSeconds: Int?,
     val hasLyrics: Boolean,
-    val lyrics: String?
+    val lyrics: Lyrics?
 )

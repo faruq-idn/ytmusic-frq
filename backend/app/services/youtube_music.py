@@ -1,11 +1,13 @@
 """
 YouTube Music service using ytmusicapi.
-Handles search, metadata, and related songs.
+Handles search, metadata, lyrics, and related songs.
 """
+import re
 from typing import List, Optional
 from ytmusicapi import YTMusic
 
 from app.models.song import Song
+from app.models.lyrics import LyricsData, LyricsLine
 from app.utils.thumbnail import transform_thumbnail_url
 
 
@@ -126,25 +128,74 @@ class YouTubeMusicService:
         except Exception:
             return []
     
-    def get_lyrics(self, video_id: str) -> Optional[str]:
+    def get_lyrics(self, video_id: str) -> Optional[LyricsData]:
         """
-        Get lyrics for a song if available.
+        Get lyrics for a song with timing information if available.
         
         Args:
             video_id: YouTube video ID
         
         Returns:
-            Lyrics string or None
+            LyricsData with structured lyrics or None
         """
         try:
             watch = self._client.get_watch_playlist(video_id)
             lyrics_id = watch.get("lyrics")
             
-            if lyrics_id:
-                lyrics_data = self._client.get_lyrics(lyrics_id)
-                return lyrics_data.get("lyrics")
+            if not lyrics_id:
+                return None
             
-            return None
+            lyrics_data = self._client.get_lyrics(lyrics_id)
+            raw_lyrics = lyrics_data.get("lyrics")
+            
+            if not raw_lyrics:
+                return None
+            
+            # Check if lyrics have timing information (LRC format)
+            # LRC format: [mm:ss.xx] lyrics text
+            lrc_pattern = r'\[(\d{2}):(\d{2})\.(\d{2,3})\](.+)'
+            lines_with_time = re.findall(lrc_pattern, raw_lyrics)
+            
+            if lines_with_time:
+                # Synced lyrics detected
+                lyrics_lines = []
+                for i, (minutes, seconds, ms, text) in enumerate(lines_with_time):
+                    start_ms = (int(minutes) * 60 + int(seconds)) * 1000 + int(ms.ljust(3, '0')[:3])
+                    
+                    # Calculate end time (start of next line or +5 seconds)
+                    if i < len(lines_with_time) - 1:
+                        next_min, next_sec, next_ms, _ = lines_with_time[i + 1]
+                        end_ms = (int(next_min) * 60 + int(next_sec)) * 1000 + int(next_ms.ljust(3, '0')[:3])
+                    else:
+                        end_ms = start_ms + 5000
+                    
+                    lyrics_lines.append(LyricsLine(
+                        text=text.strip(),
+                        start_time_ms=start_ms,
+                        end_time_ms=end_ms
+                    ))
+                
+                return LyricsData(
+                    type="synced",
+                    lines=lyrics_lines,
+                    source="youtube_music"
+                )
+            else:
+                # Plain lyrics - split by newlines
+                plain_lines = [
+                    line.strip() for line in raw_lyrics.split('\n') 
+                    if line.strip()
+                ]
+                lyrics_lines = [
+                    LyricsLine(text=line) for line in plain_lines
+                ]
+                
+                return LyricsData(
+                    type="plain",
+                    lines=lyrics_lines,
+                    source="youtube_music"
+                )
+                
         except Exception:
             return None
     
@@ -162,6 +213,64 @@ class YouTubeMusicService:
             return album.get("name")
         return None
 
+
+    def download_audio(self, video_id: str, quality: str = "best") -> Optional[str]:
+        """
+        Download audio for a song.
+        
+        Args:
+            video_id: YouTube video ID
+            quality: Audio quality (best, 128k, 256k)
+            
+        Returns:
+            Path to downloaded file or None
+        """
+        import yt_dlp
+        import tempfile
+        import os
+        
+        try:
+            # Create temp directory specific to our app
+            temp_dir = os.path.join(tempfile.gettempdir(), "ytmusic_downloads")
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            output_template = os.path.join(temp_dir, f"{video_id}.%(ext)s")
+            
+            # Map quality to format
+            # formats: bestaudio/best, or specific bitrate
+            if quality == "best":
+                format_spec = "bestaudio/best"
+            else:
+                # fallback to best if specific not found, but try to limit size?
+                # for now just use bestaudio which is usually opus/m4a
+                format_spec = "bestaudio/best"
+            
+            ydl_opts = {
+                'format': format_spec,
+                'outtmpl': output_template,
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': False,
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'm4a', # m4a is widely supported on Android
+                    'preferredquality': '192',
+                }],
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_id, download=True)
+                filename = ydl.prepare_filename(info)
+                # FFmpeg converter changes extension to m4a
+                final_filename = os.path.splitext(filename)[0] + ".m4a"
+                
+                if os.path.exists(final_filename):
+                    return final_filename
+                
+            return None
+        except Exception as e:
+            print(f"Download error: {e}")
+            return None
 
 # Singleton service instance
 yt_music_service = YouTubeMusicService()
