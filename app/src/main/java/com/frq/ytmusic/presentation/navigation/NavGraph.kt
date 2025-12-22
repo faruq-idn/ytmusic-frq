@@ -17,14 +17,20 @@ import com.frq.ytmusic.presentation.search.SearchScreen
 fun NavGraph(
     navController: NavHostController,
     onSongClick: (List<Song>, Int) -> Unit,
-    onDownloadPlay: (DownloadedSongEntity) -> Unit
+    onDownloadPlay: (DownloadedSongEntity) -> Unit,
+    activeSongId: String? = null,
+    isPlaying: Boolean = false
 ) {
     NavHost(
         navController = navController,
         startDestination = Screen.Search.route
     ) {
         composable(Screen.Search.route) {
-            SearchScreen(onSongClick = onSongClick)
+            SearchScreen(
+                onSongClick = onSongClick,
+                activeSongId = activeSongId,
+                isPlaying = isPlaying
+            )
         }
         
         composable(Screen.Library.route) {
@@ -34,7 +40,9 @@ fun NavGraph(
         composable(Screen.Downloads.route) {
             DownloadsScreen(
                 onNavigateUp = { navController.navigateUp() },
-                onPlaySong = onDownloadPlay
+                onPlaySong = onDownloadPlay,
+                activeSongId = activeSongId,
+                isPlaying = isPlaying
             )
         }
     }

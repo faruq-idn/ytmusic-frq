@@ -53,13 +53,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.frq.ytmusic.data.local.DownloadState
 import com.frq.ytmusic.data.local.entity.DownloadedSongEntity
+import com.frq.ytmusic.presentation.common.components.PlayingIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(
     onNavigateUp: () -> Unit,
     onPlaySong: (DownloadedSongEntity) -> Unit,
-    viewModel: DownloadsViewModel = hiltViewModel()
+    viewModel: DownloadsViewModel = hiltViewModel(),
+    activeSongId: String? = null,
+    isPlaying: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentDownload = uiState.currentDownload
@@ -149,7 +152,8 @@ fun DownloadsScreen(
                             DownloadedSongItem(
                                 song = song,
                                 onClick = { onPlaySong(song) },
-                                onDelete = { viewModel.deleteDownload(song.videoId) }
+                                onDelete = { viewModel.deleteDownload(song.videoId) },
+                                isPlaying = activeSongId == song.videoId && isPlaying
                             )
                         }
                     }
@@ -209,7 +213,8 @@ private fun ActiveDownloadItem(progress: Float) {
 private fun DownloadedSongItem(
     song: DownloadedSongEntity,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isPlaying: Boolean = false
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -220,12 +225,13 @@ private fun DownloadedSongItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Thumbnail
+        // Thumbnail with PlayingIndicator
         Box(
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
         ) {
             AsyncImage(
                 model = song.thumbnailUrl,
@@ -233,16 +239,28 @@ private fun DownloadedSongItem(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            // Small download indicator
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(16.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-            )
+            
+            if (isPlaying) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    PlayingIndicator(maxHeight = 12.dp, barWidth = 2.dp)
+                }
+            } else {
+                // Small download indicator
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(16.dp)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))

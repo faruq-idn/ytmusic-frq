@@ -113,8 +113,20 @@ class PlayerViewModel @Inject constructor(
 
     /**
      * Play a single song (clears queue).
+     * Skip reload if same song is already playing/loaded.
      */
     fun playSong(song: Song) {
+        val currentSong = _playerState.value.currentSong
+        if (currentSong?.videoId == song.videoId) {
+            // Same song - just ensure it's playing, don't reload
+            serviceConnection.controller.value?.let { controller ->
+                if (!controller.isPlaying) {
+                    controller.play()
+                }
+            }
+            return
+        }
+        
         queueManager.setQueue(listOf(song), 0)
         updateQueueState()
         playCurrentSong()
@@ -122,8 +134,25 @@ class PlayerViewModel @Inject constructor(
 
     /**
      * Play song from search results (sets queue to all results).
+     * Skip reload if same song is already playing/loaded.
      */
     fun playSongFromList(songs: List<Song>, index: Int) {
+        val targetSong = songs.getOrNull(index) ?: return
+        val currentSong = _playerState.value.currentSong
+        
+        if (currentSong?.videoId == targetSong.videoId) {
+            // Same song - just ensure it's playing, don't reload
+            // But still update queue for next/prev navigation
+            queueManager.setQueue(songs, index)
+            updateQueueState()
+            serviceConnection.controller.value?.let { controller ->
+                if (!controller.isPlaying) {
+                    controller.play()
+                }
+            }
+            return
+        }
+        
         queueManager.setQueue(songs, index)
         updateQueueState()
         playCurrentSong()
@@ -135,6 +164,63 @@ class PlayerViewModel @Inject constructor(
     fun addToQueue(song: Song) {
         queueManager.addToQueue(song)
         updateQueueState()
+    }
+
+    /**
+     * Play a song from local file (for downloaded songs - instant playback).
+     * Skip reload if same song is already playing/loaded.
+     */
+    fun playLocalFile(song: Song, filePath: String) {
+        val currentSong = _playerState.value.currentSong
+        if (currentSong?.videoId == song.videoId) {
+            // Same song - just ensure it's playing, don't reload
+            serviceConnection.controller.value?.let { controller ->
+                if (!controller.isPlaying) {
+                    controller.play()
+                }
+            }
+            return
+        }
+        
+        queueManager.setQueue(listOf(song), 0)
+        updateQueueState()
+        
+        // Observe states for new song
+        observeFavoriteStatus(song.videoId)
+        loadLyrics(song.videoId)
+        observeDownloadStatus(song.videoId)
+        
+        viewModelScope.launch {
+            _playerState.update { 
+                it.copy(
+                    currentSong = song,
+                    isLoading = true,
+                    error = null
+                ) 
+            }
+            
+            val controller = serviceConnection.controller.value
+            if (controller != null) {
+                val mediaItem = MediaItem.Builder()
+                    .setUri(filePath)
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(song.title)
+                            .setArtist(song.artist)
+                            .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
+                            .build()
+                    )
+                    .build()
+                
+                controller.setMediaItem(mediaItem)
+                controller.prepare()
+                controller.play()
+            } else {
+                _playerState.update { 
+                    it.copy(isLoading = false, error = "Player not ready") 
+                }
+            }
+        }
     }
 
     /**

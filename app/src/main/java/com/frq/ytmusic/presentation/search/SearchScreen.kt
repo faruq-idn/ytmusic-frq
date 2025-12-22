@@ -50,7 +50,9 @@ import com.frq.ytmusic.presentation.common.components.SongItem
 @Composable
 fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
-    onSongClick: (List<Song>, Int) -> Unit
+    onSongClick: (List<Song>, Int) -> Unit,
+    activeSongId: String? = null,
+    isPlaying: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -157,7 +159,8 @@ fun SearchScreen(
                                     keyboardController?.hide()
                                     focusManager.clearFocus()
                                     onSongClick(uiState.songs, index) 
-                                }
+                                },
+                                isPlaying = activeSongId == song.videoId && isPlaying
                             )
                         }
                     }
