@@ -21,7 +21,13 @@ data class PlayerState(
     val isLyricsVisible: Boolean = false,
     val isLyricsLoading: Boolean = false,
     val isFavorite: Boolean = false,
-    val downloadState: com.frq.ytmusic.data.local.DownloadState = com.frq.ytmusic.data.local.DownloadState.Idle
+    val downloadState: com.frq.ytmusic.data.local.DownloadState = com.frq.ytmusic.data.local.DownloadState.Idle,
+    // Related Songs
+    val relatedSongs: List<Song> = emptyList(),
+    val isRelatedLoading: Boolean = false,
+    // Sleep Timer
+    val sleepTimerMinutes: Int? = null, // null = off, -1 = end of song
+    val sleepTimerEndTime: Long = 0L // System.currentTimeMillis when timer should end
 ) {
     val hasMedia: Boolean
         get() = currentSong != null

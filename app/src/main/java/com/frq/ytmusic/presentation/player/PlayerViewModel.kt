@@ -52,6 +52,7 @@ class PlayerViewModel @Inject constructor(
     private var currentPlayerListener: Player.Listener? = null
     private var favoriteObserverJob: kotlinx.coroutines.Job? = null
     private var downloadObserverJob: kotlinx.coroutines.Job? = null
+    private var sleepTimerJob: kotlinx.coroutines.Job? = null
 
     init {
         serviceConnection.connect()
@@ -90,8 +91,20 @@ class PlayerViewModel @Inject constructor(
                     }
                     Player.STATE_ENDED -> {
                         _playerState.update { it.copy(isPlaying = false) }
-                        // Auto play next handled by MediaSession service or QueueManager
-                        playNext()
+                        
+                        // Check if sleep timer is set to "end of song"
+                        if (_playerState.value.sleepTimerMinutes == -1) {
+                            // Don't play next, just clear timer
+                            _playerState.update { 
+                                it.copy(
+                                    sleepTimerMinutes = null,
+                                    sleepTimerEndTime = 0L
+                                ) 
+                            }
+                        } else {
+                            // Auto play next handled by MediaSession service or QueueManager
+                            playNext()
+                        }
                     }
                     Player.STATE_IDLE -> {
                         _playerState.update { it.copy(isLoading = false) }
@@ -133,8 +146,9 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * Play song from search results (sets queue to all results).
-     * Skip reload if same song is already playing/loaded.
+     * Play song from search results.
+     * Only queues the selected song, then auto-fills with related songs.
+     * This provides a better listening experience than playing all search results.
      */
     fun playSongFromList(songs: List<Song>, index: Int) {
         val targetSong = songs.getOrNull(index) ?: return
@@ -142,9 +156,6 @@ class PlayerViewModel @Inject constructor(
         
         if (currentSong?.videoId == targetSong.videoId) {
             // Same song - just ensure it's playing, don't reload
-            // But still update queue for next/prev navigation
-            queueManager.setQueue(songs, index)
-            updateQueueState()
             serviceConnection.controller.value?.let { controller ->
                 if (!controller.isPlaying) {
                     controller.play()
@@ -153,9 +164,28 @@ class PlayerViewModel @Inject constructor(
             return
         }
         
-        queueManager.setQueue(songs, index)
+        // Only queue the selected song, related songs will be loaded automatically
+        queueManager.setQueue(listOf(targetSong), 0)
         updateQueueState()
         playCurrentSong()
+        
+        // Auto-fill queue with related songs in background
+        loadRelatedSongsToQueue(targetSong.videoId)
+    }
+
+    /**
+     * Load related songs and add to queue (not for display, for playback).
+     */
+    private fun loadRelatedSongsToQueue(videoId: String) {
+        viewModelScope.launch {
+            getRelatedSongsUseCase(videoId, 15)
+                .onSuccess { songs ->
+                    if (songs.isNotEmpty()) {
+                        songs.forEach { queueManager.addToQueue(it) }
+                        updateQueueState()
+                    }
+                }
+        }
     }
 
     /**
@@ -260,11 +290,38 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
+     * Load related songs for display in Related tab.
+     */
+    private fun loadRelatedSongsForDisplay(videoId: String) {
+        viewModelScope.launch {
+            _playerState.update { it.copy(isRelatedLoading = true, relatedSongs = emptyList()) }
+            getRelatedSongsUseCase(videoId, 20)
+                .onSuccess { songs ->
+                    _playerState.update { it.copy(relatedSongs = songs, isRelatedLoading = false) }
+                }
+                .onFailure {
+                    _playerState.update { it.copy(isRelatedLoading = false) }
+                }
+        }
+    }
+
+    /**
      * Play previous song.
      */
     fun playPrevious() {
         val prevSong = queueManager.previous()
         if (prevSong != null) {
+            updateQueueState()
+            playCurrentSong()
+        }
+    }
+
+    /**
+     * Play song from queue at specific index.
+     */
+    fun playFromQueue(index: Int) {
+        if (index in queueManager.queue.indices && index != queueManager.currentIndex) {
+            queueManager.skipTo(index)
             updateQueueState()
             playCurrentSong()
         }
@@ -276,6 +333,7 @@ class PlayerViewModel @Inject constructor(
         // Observe favorite status for new song
         observeFavoriteStatus(song.videoId)
         loadLyrics(song.videoId)
+        loadRelatedSongsForDisplay(song.videoId)
         observeDownloadStatus(song.videoId)
         
         viewModelScope.launch {
@@ -451,10 +509,83 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    // ===== Sleep Timer Functions =====
+    
+    /**
+     * Set sleep timer.
+     * @param minutes Duration in minutes. -1 = end of current song.
+     */
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        
+        if (minutes == -1) {
+            // End of song mode - will be handled in STATE_ENDED
+            _playerState.update { 
+                it.copy(
+                    sleepTimerMinutes = -1,
+                    sleepTimerEndTime = 0L
+                ) 
+            }
+        } else {
+            val endTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
+            _playerState.update { 
+                it.copy(
+                    sleepTimerMinutes = minutes,
+                    sleepTimerEndTime = endTime
+                ) 
+            }
+            
+            sleepTimerJob = viewModelScope.launch {
+                delay(minutes * 60 * 1000L)
+                // Timer expired - pause playback
+                serviceConnection.controller.value?.pause()
+                _playerState.update { 
+                    it.copy(
+                        sleepTimerMinutes = null,
+                        sleepTimerEndTime = 0L
+                    ) 
+                }
+            }
+        }
+    }
+    
+    /**
+     * Cancel active sleep timer.
+     */
+    fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        _playerState.update { 
+            it.copy(
+                sleepTimerMinutes = null,
+                sleepTimerEndTime = 0L
+            ) 
+        }
+    }
+    
+    /**
+     * Get remaining time text for display.
+     */
+    fun getSleepTimerRemainingText(): String? {
+        val state = _playerState.value
+        return when {
+            state.sleepTimerMinutes == null -> null
+            state.sleepTimerMinutes == -1 -> "Akhir lagu"
+            else -> {
+                val remaining = state.sleepTimerEndTime - System.currentTimeMillis()
+                if (remaining > 0) {
+                    val minutes = (remaining / 60000).toInt()
+                    val seconds = ((remaining % 60000) / 1000).toInt()
+                    "${minutes}m ${seconds}s tersisa"
+                } else null
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         favoriteObserverJob?.cancel()
         downloadObserverJob?.cancel()
+        sleepTimerJob?.cancel()
         serviceConnection.controller.value?.let { controller ->
             currentPlayerListener?.let { controller.removeListener(it) }
         }
