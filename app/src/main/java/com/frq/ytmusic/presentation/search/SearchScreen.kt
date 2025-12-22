@@ -45,11 +45,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.frq.ytmusic.domain.model.Song
 import com.frq.ytmusic.presentation.common.components.ShimmerSongList
 import com.frq.ytmusic.presentation.common.components.SongItem
+import com.frq.ytmusic.presentation.playlist.PlaylistViewModel
+import com.frq.ytmusic.presentation.playlist.components.AddToPlaylistDialog
+import com.frq.ytmusic.presentation.playlist.components.CreatePlaylistDialog
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
+    playlistViewModel: PlaylistViewModel = hiltViewModel(),
     onSongClick: (List<Song>, Int) -> Unit,
     activeSongId: String? = null,
     isPlaying: Boolean = false
@@ -58,6 +64,11 @@ fun SearchScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
+
+    // Dialog States
+    var showAddToPlaylistDialog by remember { mutableStateOf(false) }
+    var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+    var activeSongToAdd by remember { mutableStateOf<Song?>(null) }
 
     // Hide keyboard when scrolling
     LaunchedEffect(listState) {
@@ -160,13 +171,44 @@ fun SearchScreen(
                                     focusManager.clearFocus()
                                     onSongClick(uiState.songs, index) 
                                 },
-                                isPlaying = activeSongId == song.videoId && isPlaying
+                                isPlaying = activeSongId == song.videoId && isPlaying,
+                                onAddToPlaylist = {
+                                    activeSongToAdd = song
+                                    showAddToPlaylistDialog = true
+                                }
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    if (showAddToPlaylistDialog && activeSongToAdd != null) {
+        val playlistUiState by playlistViewModel.uiState.collectAsState()
+        
+        AddToPlaylistDialog(
+            playlists = playlistUiState.playlists,
+            onDismiss = { showAddToPlaylistDialog = false },
+            onPlaylistSelect = { playlist ->
+                playlistViewModel.addSongToPlaylist(playlist.id, activeSongToAdd!!)
+                showAddToPlaylistDialog = false
+            },
+            onCreateNew = {
+                showAddToPlaylistDialog = false
+                showCreatePlaylistDialog = true
+            }
+        )
+    }
+
+    if (showCreatePlaylistDialog) {
+        CreatePlaylistDialog(
+            onDismiss = { showCreatePlaylistDialog = false },
+            onCreate = { name, description ->
+                playlistViewModel.createPlaylist(name, description)
+                showCreatePlaylistDialog = false
+            }
+        )
     }
 }
 

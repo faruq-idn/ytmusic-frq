@@ -1,5 +1,6 @@
 package com.frq.ytmusic.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -104,6 +105,16 @@ fun MainScreen(
     
     // Use direct progress during drag for instant response
     val currentProgress = if (isDragging) dragProgress else animatedProgress
+
+    // Handle back press when player is expanded
+    BackHandler(enabled = targetProgress > 0.5f) {
+        targetProgress = 0f
+    }
+
+    // Also handle back when tab overlay is open
+    BackHandler(enabled = activeTab != null) {
+        activeTab = null
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(

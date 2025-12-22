@@ -52,6 +52,7 @@ ENV/
 *~
 .DS_Store
 Thumbs.db
+build_log.txt
 
 # Secrets
 *.keystore

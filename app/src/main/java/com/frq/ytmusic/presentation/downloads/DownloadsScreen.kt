@@ -67,98 +67,75 @@ fun DownloadsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val currentDownload = uiState.currentDownload
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text("Downloads")
-                        if (uiState.downloads.isNotEmpty()) {
-                            Text(
-                                text = "${uiState.downloads.size} songs",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
                 )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.primary
+            }
+
+            uiState.downloads.isEmpty() && currentDownload !is DownloadState.Downloading -> {
+                // Empty state - simple and clean
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.size(72.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No downloads yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Downloaded songs will appear here",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
+            }
 
-                uiState.downloads.isEmpty() && currentDownload !is DownloadState.Downloading -> {
-                    // Empty state - simple and clean
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.size(72.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No downloads yet",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Downloaded songs will appear here",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-
-                else -> {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        // Active download indicator (if any)
-                        if (currentDownload is DownloadState.Downloading) {
-                            item {
-                                ActiveDownloadItem(
-                                    progress = currentDownload.progress
-                                )
-                            }
-                        }
-
-                        // Downloaded songs list
-                        items(uiState.downloads) { song ->
-                            DownloadedSongItem(
-                                song = song,
-                                onClick = { onPlaySong(song) },
-                                onDelete = { viewModel.deleteDownload(song.videoId) },
-                                isPlaying = activeSongId == song.videoId && isPlaying
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 56.dp, bottom = 80.dp)
+                ) {
+                    // Active download indicator (if any)
+                    if (currentDownload is DownloadState.Downloading) {
+                        item {
+                            ActiveDownloadItem(
+                                progress = currentDownload.progress
                             )
                         }
+                    }
+
+                    // Downloaded songs list
+                    items(uiState.downloads) { song ->
+                        DownloadedSongItem(
+                            song = song,
+                            onClick = { onPlaySong(song) },
+                            onDelete = { viewModel.deleteDownload(song.videoId) },
+                            isPlaying = activeSongId == song.videoId && isPlaying
+                        )
                     }
                 }
             }
+        }
+        
+        // Back button overlay
+        IconButton(
+            onClick = onNavigateUp,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
         }
     }
 }

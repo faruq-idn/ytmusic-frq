@@ -39,7 +39,7 @@ fun PlayingIndicator(
         initialValue = 0.3f,
         targetValue = 0.7f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = LinearEasing),
+            animation = tween(1000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "bar1"
@@ -49,7 +49,7 @@ fun PlayingIndicator(
         initialValue = 0.5f,
         targetValue = 0.9f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
+            animation = tween(1400, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "bar2"
@@ -59,7 +59,7 @@ fun PlayingIndicator(
         initialValue = 0.6f,
         targetValue = 0.4f,
         animationSpec = infiniteRepeatable(
-            animation = tween(700, easing = LinearEasing),
+            animation = tween(1200, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "bar3"

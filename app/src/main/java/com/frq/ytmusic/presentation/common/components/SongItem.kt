@@ -24,7 +24,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.presentation.common.components.PlayingIndicator
 
 /**
  * Reusable component to display a song item in a list.
@@ -33,9 +46,13 @@ import com.frq.ytmusic.domain.model.Song
 fun SongItem(
     song: Song,
     onClick: () -> Unit,
+    onAddToPlaylist: (() -> Unit)? = null,
+    onRemoveFromPlaylist: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -91,6 +108,54 @@ fun SongItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        
+        // Context Menu
+        Box {
+            IconButton(onClick = { showMenu = true }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                if (onAddToPlaylist != null) {
+                    DropdownMenuItem(
+                        text = { Text("Add to playlist") },
+                        onClick = {
+                            showMenu = false
+                            onAddToPlaylist()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.PlaylistAdd,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
+                
+                if (onRemoveFromPlaylist != null) {
+                    DropdownMenuItem(
+                        text = { Text("Remove from playlist") },
+                        onClick = {
+                            showMenu = false
+                            onRemoveFromPlaylist()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
+            }
         }
     }
 }

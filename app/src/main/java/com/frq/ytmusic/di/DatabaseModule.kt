@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.frq.ytmusic.data.local.YtMusicDatabase
 import com.frq.ytmusic.data.local.dao.DownloadedSongDao
 import com.frq.ytmusic.data.local.dao.FavoriteSongDao
+import com.frq.ytmusic.data.local.dao.PlaylistDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,5 +42,11 @@ object DatabaseModule {
     @Singleton
     fun provideDownloadedSongDao(database: YtMusicDatabase): DownloadedSongDao {
         return database.downloadedSongDao()
+    }
+
+    @Provides
+    @Singleton
+    fun providePlaylistDao(database: YtMusicDatabase): PlaylistDao {
+        return database.playlistDao()
     }
 }
