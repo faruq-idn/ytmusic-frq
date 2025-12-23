@@ -41,7 +41,7 @@ fun PlayerHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 32.dp),
+            .padding(top = 8.dp, bottom = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

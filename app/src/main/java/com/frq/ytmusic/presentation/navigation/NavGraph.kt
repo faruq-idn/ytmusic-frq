@@ -13,6 +13,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.frq.ytmusic.presentation.search.SearchScreen
 import com.frq.ytmusic.presentation.playlist.PlaylistDetailScreen
+import com.frq.ytmusic.presentation.ytmplaylist.YtmPlaylistDetailScreen
 
 /**
  * Navigation graph for the app.
@@ -32,6 +33,9 @@ fun NavGraph(
         composable(Screen.Search.route) {
             SearchScreen(
                 onSongClick = onSongClick,
+                onPlaylistClick = { playlistId ->
+                    navController.navigate(Screen.YtmPlaylistDetail(playlistId).route)
+                },
                 activeSongId = activeSongId,
                 isPlaying = isPlaying
             )
@@ -82,6 +86,19 @@ fun NavGraph(
                 isPlaying = isPlaying
             )
         }
+        
+        composable(
+            route = Screen.YtmPlaylistDetail.route,
+            arguments = listOf(
+                navArgument("playlistId") { type = NavType.StringType }
+            )
+        ) {
+            YtmPlaylistDetailScreen(
+                onBack = { navController.navigateUp() },
+                onSongClick = onSongClick
+            )
+        }
     }
 }
+
 

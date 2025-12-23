@@ -75,13 +75,17 @@ fun MorphingPlayer(
     val miniPlayerHeight = 64.dp
     val playerHeight = lerp(miniPlayerHeight, screenHeight, progress)
     
-    val artworkSize = lerp(48.dp, 280.dp, progress)
+    // Dynamic artwork sizing
+    val maxArtworkSize = screenWidth - 48.dp // 24dp padding start/end
+    val artworkSize = lerp(48.dp, maxArtworkSize, progress)
     val artworkCorner = lerp(4.dp, 12.dp, progress)
-    val artworkPaddingStart = lerp(8.dp, (screenWidth - 280.dp) / 2, progress)
-    val artworkPaddingTop = lerp(8.dp, 100.dp, progress)
+    
+    // Centering artwork logic
+    val artworkPaddingStart = lerp(8.dp, 24.dp, progress)
+    val artworkPaddingTop = lerp(8.dp, 90.dp, progress) // Below header
     
     // Background gradient
-    val gradientAlpha = 0.5f * progress
+    val gradientAlpha = 0.8f * progress // Darker gradient
     val brush = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary.copy(alpha = gradientAlpha),

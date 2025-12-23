@@ -2,6 +2,7 @@ package com.frq.ytmusic.data.remote.api
 
 import com.frq.ytmusic.data.remote.dto.ApiResponse
 import com.frq.ytmusic.data.remote.dto.MetadataResponseDto
+import com.frq.ytmusic.data.remote.dto.PlaylistDetailDto
 import com.frq.ytmusic.data.remote.dto.RelatedResponseDto
 import com.frq.ytmusic.data.remote.dto.SearchResponseDto
 import com.frq.ytmusic.data.remote.dto.StreamDataDto
@@ -50,6 +51,14 @@ interface YtMusicApi {
     ): ApiResponse<RelatedResponseDto>
 
     /**
+     * Get playlist details with songs.
+     */
+    @GET("api/v1/playlist/{playlist_id}")
+    suspend fun getPlaylist(
+        @Path("playlist_id") playlistId: String
+    ): ApiResponse<PlaylistDetailDto>
+
+    /**
      * Download audio file.
      */
     @Streaming
@@ -58,4 +67,12 @@ interface YtMusicApi {
         @Path("video_id") videoId: String,
         @Query("quality") quality: String = "best"
     ): okhttp3.ResponseBody
+
+    /**
+     * Get search suggestions for autocomplete.
+     */
+    @GET("api/v1/search/suggestions")
+    suspend fun getSuggestions(
+        @Query("q") query: String
+    ): ApiResponse<List<String>>
 }

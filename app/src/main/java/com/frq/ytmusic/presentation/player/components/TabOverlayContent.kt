@@ -16,7 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ fun TabOverlayContent(
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onClose: () -> Unit,
+    modifier: Modifier = Modifier,
     // Queue
     queue: List<Song> = emptyList(),
     currentIndex: Int = -1,
@@ -57,13 +59,14 @@ fun TabOverlayContent(
     // Related
     relatedSongs: List<Song> = emptyList(),
     isRelatedLoading: Boolean = false,
-    onPlayRelated: (Song) -> Unit = {},
-    modifier: Modifier = Modifier
+    onPlayRelated: (Song) -> Unit = {}
 ) {
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.95f))
+            // Block all touch events from passing through to background
+            .pointerInput(Unit) { awaitPointerEventScope { while (true) { awaitPointerEvent() } } }
             .systemBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -123,7 +126,7 @@ fun TabOverlayContent(
                 }
             }
             
-            Divider(color = Color.White.copy(alpha = 0.1f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
             
             // Content Area based on activeTab
             when (activeTab) {
@@ -193,19 +196,4 @@ private fun LyricsContent(
     }
 }
 
-@Composable
-private fun PlaceholderContent(tabName: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Konten $tabName akan segera hadir",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
-        )
-    }
-}
+

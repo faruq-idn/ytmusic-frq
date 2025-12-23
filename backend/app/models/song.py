@@ -4,6 +4,8 @@ Song-related models for YouTube Music data.
 from typing import Optional, List, Any
 from pydantic import BaseModel
 
+from app.models.playlist import Playlist
+
 
 class Song(BaseModel):
     """Represents a song from YouTube Music."""
@@ -22,8 +24,15 @@ class SearchMeta(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    """Response model for search endpoint."""
+    """Response model for search endpoint (songs only)."""
     songs: List[Song]
+    meta: SearchMeta
+
+
+class UnifiedSearchResponse(BaseModel):
+    """Response model for unified search endpoint (songs + playlists)."""
+    songs: List[Song]
+    playlists: List[Playlist]
     meta: SearchMeta
 
 

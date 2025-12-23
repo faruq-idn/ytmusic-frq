@@ -430,7 +430,7 @@ class PlayerViewModel @Inject constructor(
                         }
                     }
                 }
-                delay(500)
+                delay(100) // Update every 100ms for smooth lyrics sync
             }
         }
     }

@@ -3,11 +3,15 @@ package com.frq.ytmusic.data.remote.mapper
 import com.frq.ytmusic.data.remote.dto.LyricsDto
 import com.frq.ytmusic.data.remote.dto.LyricsLineDto
 import com.frq.ytmusic.data.remote.dto.MetadataResponseDto
+import com.frq.ytmusic.data.remote.dto.PlaylistDetailDto
+import com.frq.ytmusic.data.remote.dto.PlaylistDto
 import com.frq.ytmusic.data.remote.dto.SongDto
 import com.frq.ytmusic.domain.model.Lyrics
 import com.frq.ytmusic.domain.model.LyricsLine
 import com.frq.ytmusic.domain.model.LyricsType
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.domain.model.YtmPlaylist
+import com.frq.ytmusic.domain.model.YtmPlaylistDetail
 import com.frq.ytmusic.domain.repository.SongMetadata
 
 /**
@@ -27,6 +31,33 @@ fun SongDto.toDomain(): Song {
 
 fun List<SongDto>.toDomainList(): List<Song> {
     return map { it.toDomain() }
+}
+
+fun PlaylistDto.toDomain(): YtmPlaylist {
+    return YtmPlaylist(
+        playlistId = playlistId,
+        title = title,
+        description = description,
+        thumbnailUrl = thumbnailUrl,
+        songCount = songCount,
+        author = author
+    )
+}
+
+fun List<PlaylistDto>.toPlaylistDomainList(): List<YtmPlaylist> {
+    return map { it.toDomain() }
+}
+
+fun PlaylistDetailDto.toDomain(): YtmPlaylistDetail {
+    return YtmPlaylistDetail(
+        playlistId = playlistId,
+        title = title,
+        description = description,
+        thumbnailUrl = thumbnailUrl,
+        author = author,
+        songCount = songCount,
+        songs = songs.toDomainList()
+    )
 }
 
 fun MetadataResponseDto.toDomain(): SongMetadata {
@@ -56,3 +87,4 @@ fun LyricsLineDto.toDomain(): LyricsLine {
         endTimeMs = endTimeMs
     )
 }
+

@@ -1,7 +1,9 @@
 package com.frq.ytmusic.domain.repository
 
 import com.frq.ytmusic.domain.model.Lyrics
+import com.frq.ytmusic.domain.model.SearchResult
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.domain.model.YtmPlaylistDetail
 
 /**
  * Repository interface for song data operations.
@@ -13,6 +15,11 @@ interface SongRepository {
      * Search for songs by query.
      */
     suspend fun searchSongs(query: String, limit: Int = 20): Result<List<Song>>
+    
+    /**
+     * Unified search for songs and playlists.
+     */
+    suspend fun searchAll(query: String, limit: Int = 20): Result<SearchResult>
     
     /**
      * Get stream URL for a song.
@@ -28,6 +35,16 @@ interface SongRepository {
      * Get related songs.
      */
     suspend fun getRelatedSongs(videoId: String, limit: Int = 20): Result<List<Song>>
+    
+    /**
+     * Get YTM playlist detail with songs.
+     */
+    suspend fun getPlaylist(playlistId: String): Result<YtmPlaylistDetail>
+
+    /**
+     * Get search suggestions for autocomplete.
+     */
+    suspend fun getSuggestions(query: String): Result<List<String>>
 }
 
 /**

@@ -13,4 +13,10 @@ sealed class Screen(val route: String) {
             const val route = "playlist/{playlistId}"
         }
     }
+    data class YtmPlaylistDetail(val playlistId: String) : Screen("ytm_playlist/$playlistId") {
+        companion object {
+            const val route = "ytm_playlist/{playlistId}"
+        }
+    }
 }
+
