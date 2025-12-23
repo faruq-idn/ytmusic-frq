@@ -18,5 +18,10 @@ sealed class Screen(val route: String) {
             const val route = "ytm_playlist/{playlistId}"
         }
     }
+    data class AlbumDetail(val browseId: String) : Screen("album/$browseId") {
+        companion object {
+            const val route = "album/{browseId}"
+        }
+    }
 }
 

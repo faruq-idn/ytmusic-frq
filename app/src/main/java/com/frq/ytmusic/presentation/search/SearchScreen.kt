@@ -53,6 +53,7 @@ import com.frq.ytmusic.presentation.playlist.PlaylistViewModel
 import com.frq.ytmusic.presentation.playlist.components.AddToPlaylistDialog
 import com.frq.ytmusic.presentation.playlist.components.CreatePlaylistDialog
 import com.frq.ytmusic.presentation.search.components.PlaylistItem
+import com.frq.ytmusic.presentation.search.components.AlbumItem
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,6 +66,7 @@ fun SearchScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     onSongClick: (List<Song>, Int) -> Unit,
     onPlaylistClick: (String) -> Unit = {},
+    onAlbumClick: (String) -> Unit = {},
     activeSongId: String? = null,
     isPlaying: Boolean = false
 ) {
@@ -207,6 +209,27 @@ fun SearchScreen(
                                         keyboardController?.hide()
                                         focusManager.clearFocus()
                                         onPlaylistClick(playlist.playlistId)
+                                    }
+                                )
+                            }
+                        }
+                        
+                        // Albums Section
+                        if (uiState.albums.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Albums",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            items(uiState.albums.take(5)) { album ->
+                                AlbumItem(
+                                    album = album,
+                                    onClick = {
+                                        keyboardController?.hide()
+                                        focusManager.clearFocus()
+                                        onAlbumClick(album.browseId)
                                     }
                                 )
                             }

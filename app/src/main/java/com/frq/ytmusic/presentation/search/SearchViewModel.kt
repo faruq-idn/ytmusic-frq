@@ -95,8 +95,9 @@ class SearchViewModel @Inject constructor(
                     it.copy(
                         songs = result.songs,
                         playlists = result.playlists,
+                        albums = result.albums,
                         isLoading = false,
-                        isEmpty = result.songs.isEmpty() && result.playlists.isEmpty(),
+                        isEmpty = result.songs.isEmpty() && result.playlists.isEmpty() && result.albums.isEmpty(),
                         error = null
                     ) 
                 }
@@ -123,6 +124,7 @@ class SearchViewModel @Inject constructor(
             it.copy(
                 songs = emptyList(),
                 playlists = emptyList(),
+                albums = emptyList(),
                 isEmpty = false,
                 error = null
             )

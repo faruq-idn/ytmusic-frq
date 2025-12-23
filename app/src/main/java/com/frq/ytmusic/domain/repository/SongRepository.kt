@@ -3,6 +3,7 @@ package com.frq.ytmusic.domain.repository
 import com.frq.ytmusic.domain.model.Lyrics
 import com.frq.ytmusic.domain.model.SearchResult
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.domain.model.YtmAlbumDetail
 import com.frq.ytmusic.domain.model.YtmPlaylistDetail
 
 /**
@@ -45,6 +46,11 @@ interface SongRepository {
      * Get search suggestions for autocomplete.
      */
     suspend fun getSuggestions(query: String): Result<List<String>>
+
+    /**
+     * Get YTM album detail with tracks.
+     */
+    suspend fun getAlbum(browseId: String): Result<YtmAlbumDetail>
 }
 
 /**

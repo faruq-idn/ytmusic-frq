@@ -5,6 +5,7 @@ from typing import Optional, List, Any
 from pydantic import BaseModel
 
 from app.models.playlist import Playlist
+from app.models.album import Album
 
 
 class Song(BaseModel):
@@ -30,9 +31,10 @@ class SearchResponse(BaseModel):
 
 
 class UnifiedSearchResponse(BaseModel):
-    """Response model for unified search endpoint (songs + playlists)."""
+    """Response model for unified search endpoint (songs + playlists + albums)."""
     songs: List[Song]
     playlists: List[Playlist]
+    albums: List[Album] = []
     meta: SearchMeta
 
 

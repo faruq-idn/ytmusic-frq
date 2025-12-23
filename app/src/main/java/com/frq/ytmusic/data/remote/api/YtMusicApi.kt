@@ -1,5 +1,6 @@
 package com.frq.ytmusic.data.remote.api
 
+import com.frq.ytmusic.data.remote.dto.AlbumDetailDto
 import com.frq.ytmusic.data.remote.dto.ApiResponse
 import com.frq.ytmusic.data.remote.dto.MetadataResponseDto
 import com.frq.ytmusic.data.remote.dto.PlaylistDetailDto
@@ -75,4 +76,12 @@ interface YtMusicApi {
     suspend fun getSuggestions(
         @Query("q") query: String
     ): ApiResponse<List<String>>
+
+    /**
+     * Get album details with tracks.
+     */
+    @GET("api/v1/album/{browse_id}")
+    suspend fun getAlbum(
+        @Path("browse_id") browseId: String
+    ): ApiResponse<AlbumDetailDto>
 }

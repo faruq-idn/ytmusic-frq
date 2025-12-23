@@ -1,11 +1,13 @@
 package com.frq.ytmusic.data.repository
 
 import com.frq.ytmusic.data.remote.api.YtMusicApi
+import com.frq.ytmusic.data.remote.mapper.toAlbumDomainList
 import com.frq.ytmusic.data.remote.mapper.toDomain
 import com.frq.ytmusic.data.remote.mapper.toDomainList
 import com.frq.ytmusic.data.remote.mapper.toPlaylistDomainList
 import com.frq.ytmusic.domain.model.SearchResult
 import com.frq.ytmusic.domain.model.Song
+import com.frq.ytmusic.domain.model.YtmAlbumDetail
 import com.frq.ytmusic.domain.model.YtmPlaylistDetail
 import com.frq.ytmusic.domain.repository.SongMetadata
 import com.frq.ytmusic.domain.repository.SongRepository
@@ -40,7 +42,8 @@ class SongRepositoryImpl @Inject constructor(
                 Result.success(
                     SearchResult(
                         songs = response.data.songs.toDomainList(),
-                        playlists = response.data.playlists.toPlaylistDomainList()
+                        playlists = response.data.playlists.toPlaylistDomainList(),
+                        albums = response.data.albums.toAlbumDomainList()
                     )
                 )
             } else {
@@ -113,6 +116,19 @@ class SongRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Result.success(emptyList()) // Suggestions failing shouldn't crash
+        }
+    }
+
+    override suspend fun getAlbum(browseId: String): Result<YtmAlbumDetail> {
+        return try {
+            val response = api.getAlbum(browseId)
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(Exception(response.error ?: "Failed to get album"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

@@ -88,3 +88,30 @@ fun LyricsLineDto.toDomain(): LyricsLine {
     )
 }
 
+fun com.frq.ytmusic.data.remote.dto.AlbumDto.toDomain(): com.frq.ytmusic.domain.model.YtmAlbum {
+    return com.frq.ytmusic.domain.model.YtmAlbum(
+        browseId = browseId,
+        title = title,
+        artist = artist,
+        thumbnailUrl = thumbnailUrl,
+        year = year,
+        isExplicit = isExplicit
+    )
+}
+
+fun List<com.frq.ytmusic.data.remote.dto.AlbumDto>.toAlbumDomainList(): List<com.frq.ytmusic.domain.model.YtmAlbum> {
+    return map { it.toDomain() }
+}
+
+fun com.frq.ytmusic.data.remote.dto.AlbumDetailDto.toDomain(): com.frq.ytmusic.domain.model.YtmAlbumDetail {
+    return com.frq.ytmusic.domain.model.YtmAlbumDetail(
+        browseId = browseId,
+        title = title,
+        artist = artist,
+        thumbnailUrl = thumbnailUrl,
+        year = year,
+        trackCount = trackCount,
+        duration = duration,
+        songs = songs.toDomainList()
+    )
+}

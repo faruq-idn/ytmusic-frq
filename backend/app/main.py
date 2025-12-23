@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import search, stream, metadata, download, playlist
+from app.routers import search, stream, metadata, download, playlist, album
 
 
 # Create FastAPI application
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(search.router, prefix="/api/v1", tags=["Search"])
 app.include_router(stream.router, prefix="/api/v1", tags=["Stream"])
 app.include_router(playlist.router, prefix="/api/v1", tags=["Playlist"])
+app.include_router(album.router, prefix="/api/v1", tags=["Album"])
 app.include_router(metadata.router, tags=["Metadata"])
 app.include_router(download.router, tags=["Download"])
 
