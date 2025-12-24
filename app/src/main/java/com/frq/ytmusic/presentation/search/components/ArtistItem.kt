@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,13 +45,16 @@ fun ArtistItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Circular Artist Image (optimized)
-        AsyncImage(
-            model = ImageRequest.Builder(context)
+        // Circular Artist Image (optimized with remembered request)
+        val imageRequest = remember(artist.thumbnailUrl) {
+            ImageRequest.Builder(context)
                 .data(artist.thumbnailUrl)
                 .crossfade(true)
                 .size(112)  // 56dp * 2
-                .build(),
+                .build()
+        }
+        AsyncImage(
+            model = imageRequest,
             contentDescription = artist.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -71,8 +75,11 @@ fun ArtistItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
             // Show "Artis • X subscribers" or just "Artis"
+            val subtitle = remember(artist.subscribers) {
+                if (artist.subscribers != null) "Artis • ${artist.subscribers}" else "Artis"
+            }
             Text(
-                text = if (artist.subscribers != null) "Artis • ${artist.subscribers}" else "Artis",
+                text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1

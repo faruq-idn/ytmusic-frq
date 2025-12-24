@@ -44,6 +44,7 @@ class MusicPlaybackService : MediaSessionService() {
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)  // Keep CPU and network awake during playback
             .build()
 
         mediaSession = MediaSession.Builder(this, player!!)
@@ -79,6 +80,19 @@ class MusicPlaybackService : MediaSessionService() {
         }
         super.onDestroy()
     }
+
+    @OptIn(UnstableApi::class)
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        try {
+            super.onUpdateNotification(session, startInForegroundRequired)
+        } catch (e: Exception) {
+            // Handle ForegroundServiceStartNotAllowedException on Android 12+
+            // This can happen when trying to start foreground from background
+            // The service will continue running, just without foreground priority
+            e.printStackTrace()
+        }
+    }
+
 
     private fun createPendingIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {

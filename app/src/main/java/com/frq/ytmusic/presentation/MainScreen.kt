@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -24,6 +25,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.frq.ytmusic.presentation.navigation.BottomNavBar
@@ -74,13 +79,7 @@ fun MainScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            bottomBar = {
-                // Keep BottomNavBar always in layout to prevent jumps, just fade it
-                BottomNavBar(
-                    navController = navController,
-                    modifier = Modifier.alpha(1f - animatedProgress * 3f)
-                )
-            }
+            // BottomNavBar removed from Scaffold to handle z-ordering with Player
         ) { paddingValues ->
             Box(
                 modifier = Modifier
@@ -116,14 +115,29 @@ fun MainScreen(
         // Unified Morphing Player - positioned as Overlay
         if (song != null) {
             val systemNavHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            val navBarHeight = 80.dp + systemNavHeight
-            val playerBottomPadding = lerp(navBarHeight, 0.dp, animatedProgress)
+            // Memoize navBarHeight calculation
+            val navBarHeight = remember(systemNavHeight) { 80.dp + systemNavHeight }
+            
+            // Calculate Slide Offsets
+            val configuration = LocalConfiguration.current
+            val screenHeight = configuration.screenHeightDp.dp
+            val density = LocalDensity.current
+            
+            // Y Position when collapsed: ScreenHeight - NavBar - MiniPlayerHeight(64dp)
+            val collapsedOffsetY = remember(screenHeight, navBarHeight, density) {
+                with(density) { (screenHeight - navBarHeight - 64.dp).toPx() }
+            }
+            
+            // Calculate current Y offset based on progress (0 = collapsed, 1 = expanded)
+            val currentOffsetY = remember(collapsedOffsetY, animatedProgress) {
+                androidx.compose.ui.util.lerp(collapsedOffsetY, 0f, animatedProgress)
+            }
             
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = playerBottomPadding),
-                contentAlignment = Alignment.BottomCenter
+                    .offset { IntOffset(0, currentOffsetY.roundToInt()) },
+                contentAlignment = Alignment.TopCenter
             ) {
                 MorphingPlayer(
                     playerViewModel = playerViewModel,
@@ -136,16 +150,11 @@ fun MainScreen(
                         dragProgress = currentProgress
                     },
                     onDrag = { delta ->
-                        // Add progressDelta directly
                         dragProgress = (dragProgress + delta).coerceIn(0f, 1f)
-                        // Track last delta for direction
                         lastDragDelta = delta
                     },
                     onDragEnd = {
                         isDragging = false
-                        // Direction-aware snap logic
-                        // If pushing UP (delta > 0) and past 15% -> Expand
-                        // If pushing DOWN (delta < 0) and past 15% (from top) -> Collapse
                         val isExpanding = lastDragDelta > 0
                         val movedMin = 0.15f
                         
@@ -158,18 +167,33 @@ fun MainScreen(
                     onExpand = { targetProgress = 1f },
                     onCollapse = { targetProgress = 0f },
                     onArtistClick = { artistId, artistName ->
-                        // Collapse player and navigate
                         targetProgress = 0f
                         if (artistId != null) {
-                            // Direct navigation - no API call needed
                             navController.navigate(Screen.ArtistDetail(artistId).route)
                         } else {
-                            // Fallback: search by name on artist screen
                             navController.navigate(Screen.ArtistByName(artistName).route)
                         }
                     }
                 )
             }
+        
+            // Bottom Navigation Bar - Manually positioned
+            // It needs to be ON TOP of player when collapsed, and BEHIND when expanded
+            BottomNavBar(
+                navController = navController,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    // No need for manual padding - NavigationBar handles insets internally
+                    .zIndex(if (currentProgress > 0.5f) -1f else 1f) // Switch Z-order during animation
+                    .alpha(1f - currentProgress * 4f) // Quick fade out during expansion
+            )
+        } else {
+            // Show BottomNavBar normally if no song playing (always visible)
+             BottomNavBar(
+                navController = navController,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+            )
         }
         
         // Fullscreen Tab Overlays (Queue, Lyrics, Related)

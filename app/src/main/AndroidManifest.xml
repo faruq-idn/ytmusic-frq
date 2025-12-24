@@ -11,6 +11,9 @@
     
     <!-- Notification permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- Wake lock for background playback -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".YtMusicApp"
@@ -29,6 +32,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.YtMusicPribadi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -72,12 +72,15 @@ fun SongItem(
             contentAlignment = Alignment.Center
         ) {
             val context = LocalContext.current
-            AsyncImage(
-                model = ImageRequest.Builder(context)
+            val imageRequest = remember(song.thumbnailUrl) {
+                ImageRequest.Builder(context)
                     .data(song.thumbnailUrl)
                     .crossfade(true)
                     .size(112)  // 56dp * 2 for density
-                    .build(),
+                    .build()
+            }
+            AsyncImage(
+                model = imageRequest,
                 contentDescription = "Album Art",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -110,8 +113,11 @@ fun SongItem(
                 overflow = TextOverflow.Ellipsis
             )
             
+            val subtitle = remember(song.artist, song.durationText) {
+                "${song.artist} • ${song.durationText ?: ""}".trimEnd(' ', '•')
+            }
             Text(
-                text = "${song.artist} • ${song.durationText ?: ""}".trimEnd(' ', '•'),
+                text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

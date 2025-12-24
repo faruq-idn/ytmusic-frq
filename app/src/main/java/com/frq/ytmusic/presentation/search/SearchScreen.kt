@@ -3,7 +3,6 @@ package com.frq.ytmusic.presentation.search
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -78,6 +77,14 @@ fun SearchScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
 
+    // Remembered callbacks to avoid recomposition
+    val hideKeyboard = remember(keyboardController, focusManager) {
+        {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
+    }
+
     // Dialog States
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
@@ -88,13 +95,13 @@ fun SearchScreen(
     var albumsExpanded by remember { mutableStateOf(false) }
     var artistsExpanded by remember { mutableStateOf(false) }
 
+
     // Hide keyboard when scrolling
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
             .collect { isScrolling ->
                 if (isScrolling) {
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
+                    hideKeyboard()
                 }
             }
     }
@@ -108,8 +115,7 @@ fun SearchScreen(
                 onFocused = viewModel::onSearchBarFocused,
                 onSearchAction = {
                     viewModel.search()
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
+                    hideKeyboard()
                 }
             )
         }
@@ -121,8 +127,7 @@ fun SearchScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = {
-                        keyboardController?.hide()
-                        focusManager.clearFocus()
+                        hideKeyboard()
                     })
                 }
         ) {
@@ -211,7 +216,10 @@ fun SearchScreen(
                                 )
                             }
                             val topSongs = uiState.songs.take(3)
-                            itemsIndexed(topSongs) { index, song ->
+                            itemsIndexed(
+                                items = topSongs,
+                                key = { index, song -> "top_${song.videoId}" }
+                            ) { index, song ->
                                 SongItem(
                                     song = song,
                                     onClick = { 
@@ -238,7 +246,10 @@ fun SearchScreen(
                                 )
                             }
                             val playlistsToShow = if (playlistsExpanded) uiState.playlists else uiState.playlists.take(3)
-                            items(playlistsToShow) { playlist ->
+                            items(
+                                items = playlistsToShow,
+                                key = { "playlist_${it.playlistId}" }
+                            ) { playlist ->
                                 PlaylistItem(
                                     playlist = playlist,
                                     onClick = {
@@ -276,7 +287,10 @@ fun SearchScreen(
                                 )
                             }
                             val albumsToShow = if (albumsExpanded) uiState.albums else uiState.albums.take(3)
-                            items(albumsToShow) { album ->
+                            items(
+                                items = albumsToShow,
+                                key = { "album_${it.browseId}" }
+                            ) { album ->
                                 AlbumItem(
                                     album = album,
                                     onClick = {
@@ -339,11 +353,11 @@ fun SearchScreen(
                             }
                             
                             val remainingSongs = uiState.songs.drop(3)
-                            items(
+                            itemsIndexed(
                                 items = remainingSongs,
-                                key = { "song_${it.videoId}" }
-                            ) { song ->
-                                val fullIndex = uiState.songs.indexOf(song)
+                                key = { _, song -> "song_${song.videoId}" }
+                            ) { localIndex, song ->
+                                val fullIndex = localIndex + 3
                                 SongItem(
                                     song = song,
                                     onClick = { 

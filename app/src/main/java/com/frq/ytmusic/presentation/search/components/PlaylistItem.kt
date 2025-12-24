@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,10 +64,12 @@ fun PlaylistItem(
             )
             
             // Subtitle: Author • Song count
-            val subtitle = buildString {
-                append("Playlist")
-                playlist.author?.let { append(" • $it") }
-                playlist.songCount?.let { append(" • $it lagu") }
+            val subtitle = remember(playlist.author, playlist.songCount) {
+                buildString {
+                    append("Playlist")
+                    playlist.author?.let { append(" • $it") }
+                    playlist.songCount?.let { append(" • $it lagu") }
+                }
             }
             
             Text(

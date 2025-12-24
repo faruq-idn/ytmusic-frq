@@ -78,48 +78,73 @@ class YouTubeMusicService:
     def search_playlists(self, query: str, limit: int = 10) -> List[Playlist]:
         """
         Search for playlists on YouTube Music.
+        Returns actual playable song count (excluding unavailable songs).
         
         Args:
             query: Search query string
             limit: Maximum number of results (default 10)
         
         Returns:
-            List of Playlist objects
+            List of Playlist objects with accurate song counts
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
         results = self._client.search(query, filter="playlists", limit=limit)
         
-        playlists = []
+        # Collect playlist basic info
+        playlist_data = []
         for item in results:
-            # Get highest quality thumbnail
+            playlist_id = item.get("browseId", "")
+            if not playlist_id:
+                continue
+            
             thumbnail_url = ""
             if item.get("thumbnails"):
                 thumbnail_url = transform_thumbnail_url(
                     item["thumbnails"][-1]["url"]
                 )
             
-            # Extract song count from itemCount or description
-            # Extract song count from itemCount
-            song_count = None
-            item_count_text = item.get("itemCount")
-            if item_count_text:
+            playlist_data.append({
+                "playlist_id": playlist_id,
+                "title": item.get("title", "Unknown Playlist"),
+                "description": item.get("description"),
+                "thumbnail_url": thumbnail_url,
+                "author": item.get("author", None)
+            })
+        
+        # Fetch actual song counts concurrently
+        def get_playable_count(playlist_id: str) -> int:
+            try:
+                data = self._client.get_playlist(playlist_id)
+                # Count only tracks with valid videoId
+                count = sum(1 for t in data.get("tracks", []) if t.get("videoId"))
+                return count
+            except:
+                return 0
+        
+        song_counts = {}
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_id = {
+                executor.submit(get_playable_count, p["playlist_id"]): p["playlist_id"]
+                for p in playlist_data
+            }
+            for future in as_completed(future_to_id):
+                pid = future_to_id[future]
                 try:
-                    # Remove " songs", " song" (case insensitive), and commas
-                    clean_text = str(item_count_text).lower().replace(" songs", "").replace(" song", "").replace(",", "").strip()
-                    # Extract first number found if mixed with other text
-                    import re
-                    match = re.search(r'\d+', clean_text)
-                    if match:
-                        song_count = int(match.group())
+                    song_counts[pid] = future.result()
                 except:
-                    pass
-            
+                    song_counts[pid] = 0
+        
+        # Build playlist list with actual counts
+        playlists = []
+        for data in playlist_data:
             playlists.append(Playlist(
-                playlist_id=item.get("browseId", ""),
-                title=item.get("title", "Unknown Playlist"),
-                description=item.get("description"),
-                thumbnail_url=thumbnail_url,
-                song_count=song_count,
-                author=item.get("author", None)
+                playlist_id=data["playlist_id"],
+                title=data["title"],
+                description=data["description"],
+                thumbnail_url=data["thumbnail_url"],
+                song_count=song_counts.get(data["playlist_id"], 0),
+                author=data["author"]
             ))
         
         return playlists
@@ -355,6 +380,11 @@ class YouTubeMusicService:
             # Parse songs
             songs = []
             for item in data.get("tracks", []):
+                # Skip tracks without valid videoId (deleted/unavailable songs)
+                video_id = item.get("videoId")
+                if not video_id:
+                    continue
+                    
                 song_thumbnail = ""
                 if item.get("thumbnails"):
                     song_thumbnail = transform_thumbnail_url(
@@ -362,11 +392,11 @@ class YouTubeMusicService:
                     )
                 
                 songs.append(Song(
-                    video_id=item.get("videoId", ""),
-                    title=item.get("title", "Unknown"),
+                    video_id=video_id,
+                    title=item.get("title") or "Unknown",
                     artist=self._get_artist_name(item),
                     album=self._get_album_name(item),
-                    duration_text=item.get("duration", ""),
+                    duration_text=item.get("duration") or "",
                     thumbnail_url=song_thumbnail
                 ))
             
@@ -380,7 +410,11 @@ class YouTubeMusicService:
                 "songs": songs
             }
         except Exception as e:
-            print(f"Error fetching playlist: {e}")
+            error_msg = str(e).lower()
+            print(f"Error fetching playlist {playlist_id}: {e}")
+            # Check if it's a private/unavailable playlist
+            if "private" in error_msg or "unavailable" in error_msg or "not found" in error_msg:
+                print(f"Playlist {playlist_id} is private or unavailable")
             return None
     
     def get_song_metadata(self, video_id: str) -> Optional[dict]:

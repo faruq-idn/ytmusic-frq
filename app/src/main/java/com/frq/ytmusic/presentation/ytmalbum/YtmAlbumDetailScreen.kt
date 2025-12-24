@@ -31,6 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -52,6 +56,7 @@ import coil.compose.AsyncImage
 import com.frq.ytmusic.domain.model.Song
 import com.frq.ytmusic.presentation.common.components.SongItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun YtmAlbumDetailScreen(
     onBack: () -> Unit,
@@ -121,7 +126,7 @@ fun YtmAlbumDetailScreen(
                 
                 LazyColumn(
                     state = scrollState,
-                    contentPadding = PaddingValues(bottom = 100.dp),
+                    contentPadding = PaddingValues(bottom = 160.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     // Album Header
@@ -246,27 +251,9 @@ fun YtmAlbumDetailScreen(
             }
         }
         
-        // Fixed Header Bar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = headerBgAlpha)
-                )
-                .padding(top = 40.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-                
+        // Fixed Header Bar (TopAppBar)
+        TopAppBar(
+            title = {
                 AnimatedVisibility(
                     visible = showHeaderTitle,
                     enter = fadeIn(),
@@ -274,16 +261,30 @@ fun YtmAlbumDetailScreen(
                 ) {
                     Text(
                         text = uiState.album?.title ?: "Album",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 8.dp)
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
-        }
+            },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = headerBgAlpha),
+                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = headerBgAlpha),
+                navigationIconContentColor = Color.White,
+                titleContentColor = Color.White
+            ),
+            windowInsets = WindowInsets(0.dp)
+        )
     }
 }

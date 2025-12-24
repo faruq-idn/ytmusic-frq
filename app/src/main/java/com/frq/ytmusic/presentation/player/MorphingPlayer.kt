@@ -69,38 +69,41 @@ fun MorphingPlayer(
     
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val configuration = LocalConfiguration.current
+    val screenHeight = remember(configuration) { configuration.screenHeightDp.dp }
+    val screenWidth = remember(configuration) { configuration.screenWidthDp.dp }
     
-    // Interpolate dimensions
+    // Static dimensions - calculated once
     val miniPlayerHeight = 64.dp
-    val playerHeight = lerp(miniPlayerHeight, screenHeight, progress)
+    val maxArtworkSize = remember(screenWidth) { screenWidth - 48.dp }
     
-    // Dynamic artwork sizing
-    val maxArtworkSize = screenWidth - 48.dp // 24dp padding start/end
+    // Interpolate dimensions - direct calculation for smooth animation
     val artworkSize = lerp(48.dp, maxArtworkSize, progress)
     val artworkCorner = lerp(4.dp, 12.dp, progress)
-    
-    // Centering artwork logic
     val artworkPaddingStart = lerp(8.dp, 24.dp, progress)
-    val artworkPaddingTop = lerp(8.dp, 90.dp, progress) // Below header
+    val artworkPaddingTop = lerp(8.dp, 120.dp, progress)
     
-    // Background gradient
-    val gradientAlpha = 0.8f * progress // Darker gradient
+    // Gradient brush - needs to update with progress for visual effect
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val gradientAlpha = 0.8f * progress
     val brush = Brush.verticalGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = gradientAlpha),
-            MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.surface
+            primaryColor.copy(alpha = gradientAlpha),
+            surfaceColor,
+            surfaceColor
         )
     )
     
-    val draggableHeight = with(LocalDensity.current) { (screenHeight - miniPlayerHeight).toPx() }
+    val density = LocalDensity.current
+    val draggableHeight = remember(screenHeight, density) {
+        with(density) { (screenHeight - miniPlayerHeight).toPx() }
+    }
+
     
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(playerHeight)
+            .fillMaxSize() // Always fill max size, we slide it via offset in MainScreen
             .background(MaterialTheme.colorScheme.surface)
             .background(brush)
             .pointerInput(Unit) {
@@ -167,14 +170,18 @@ fun MorphingPlayer(
         
         // Mini player controls
         if (progress < 0.5f) {
+            val playPause = remember(playerViewModel) { { playerViewModel.togglePlayPause() } }
+            val playPrev = remember(playerViewModel) { { playerViewModel.playPrevious() } }
+            val playNext = remember(playerViewModel) { { playerViewModel.playNext() } }
+            
             MiniPlayerControls(
                 title = song.title,
                 artist = song.artist,
                 isPlaying = playerState.isPlaying,
                 alpha = 1f - progress * 2f,
-                onPrevious = { playerViewModel.playPrevious() },
-                onPlayPause = { playerViewModel.togglePlayPause() },
-                onNext = { playerViewModel.playNext() }
+                onPrevious = playPrev,
+                onPlayPause = playPause,
+                onNext = playNext
             )
         }
         
@@ -200,33 +207,44 @@ fun MorphingPlayer(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    val toggleFav = remember(playerViewModel) { { playerViewModel.toggleFavorite() } }
+                    val toggleDown = remember(playerViewModel) { { playerViewModel.toggleDownload() } }
+                    
                     PlayerSongInfo(
                         title = song.title,
                         artist = song.artist,
                         isFavorite = isFavorite,
                         downloadState = playerState.downloadState,
-                        onFavoriteClick = { playerViewModel.toggleFavorite() },
-                        onDownloadClick = { playerViewModel.toggleDownload() },
+                        onFavoriteClick = toggleFav,
+                        onDownloadClick = toggleDown,
                         onArtistClick = { onArtistClick(song.artistId, song.artist) }
                     )
+                    
+                    val seekTo = remember(playerViewModel) { { pos: Float -> playerViewModel.seekTo(pos) } }
                     
                     PlayerSeekBar(
                         progress = playerState.progress,
                         currentPosition = playerState.currentPosition,
                         duration = playerState.duration,
-                        onSeek = { playerViewModel.seekTo(it) }
+                        onSeek = seekTo
                     )
+                    
+                    val playPause = remember(playerViewModel) { { playerViewModel.togglePlayPause() } }
+                    val playPrev = remember(playerViewModel) { { playerViewModel.playPrevious() } }
+                    val playNext = remember(playerViewModel) { { playerViewModel.playNext() } }
+                    val toggleShuffle = remember(playerViewModel) { { playerViewModel.toggleShuffle() } }
+                    val toggleRepeat = remember(playerViewModel) { { playerViewModel.toggleRepeat() } }
                     
                     PlaybackControls(
                         isPlaying = playerState.isPlaying,
                         isLoading = playerState.isLoading,
                         isShuffleEnabled = playerState.isShuffleEnabled,
                         repeatMode = playerState.repeatMode,
-                        onPlayPause = { playerViewModel.togglePlayPause() },
-                        onPrevious = { playerViewModel.playPrevious() },
-                        onNext = { playerViewModel.playNext() },
-                        onShuffle = { playerViewModel.toggleShuffle() },
-                        onRepeat = { playerViewModel.toggleRepeat() }
+                        onPlayPause = playPause,
+                        onPrevious = playPrev,
+                        onNext = playNext,
+                        onShuffle = toggleShuffle,
+                        onRepeat = toggleRepeat
                     )
                     
                     PlayerBottomTabs(
