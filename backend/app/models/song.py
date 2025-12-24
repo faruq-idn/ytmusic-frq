@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.models.playlist import Playlist
 from app.models.album import Album
+from app.models.artist import Artist
 
 
 class Song(BaseModel):
@@ -13,6 +14,7 @@ class Song(BaseModel):
     video_id: str
     title: str
     artist: str
+    artist_id: Optional[str] = None  # browseId for artist navigation
     album: Optional[str] = None
     duration_text: Optional[str] = None
     thumbnail_url: str
@@ -31,10 +33,11 @@ class SearchResponse(BaseModel):
 
 
 class UnifiedSearchResponse(BaseModel):
-    """Response model for unified search endpoint (songs + playlists + albums)."""
+    """Response model for unified search endpoint (songs + playlists + albums + artists)."""
     songs: List[Song]
     playlists: List[Playlist]
     albums: List[Album] = []
+    artists: List[Artist] = []
     meta: SearchMeta
 
 

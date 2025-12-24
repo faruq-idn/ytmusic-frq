@@ -39,7 +39,8 @@ class PlayerViewModel @Inject constructor(
     private val downloadSongUseCase: com.frq.ytmusic.domain.usecase.DownloadSongUseCase,
     private val deleteDownloadUseCase: com.frq.ytmusic.domain.usecase.DeleteDownloadUseCase,
     private val isDownloadedUseCase: com.frq.ytmusic.domain.usecase.IsDownloadedUseCase,
-    private val downloadRepository: com.frq.ytmusic.domain.repository.DownloadRepository
+    private val downloadRepository: com.frq.ytmusic.domain.repository.DownloadRepository,
+    private val songRepository: com.frq.ytmusic.domain.repository.SongRepository
 ) : ViewModel() {
 
     private val _playerState = MutableStateFlow(PlayerState())
@@ -579,6 +580,13 @@ class PlayerViewModel @Inject constructor(
                 } else null
             }
         }
+    }
+
+    /**
+     * Find artist browseId by name for navigation.
+     */
+    suspend fun findArtistBrowseId(artistName: String): String? {
+        return songRepository.findArtistBrowseId(artistName)
     }
 
     override fun onCleared() {

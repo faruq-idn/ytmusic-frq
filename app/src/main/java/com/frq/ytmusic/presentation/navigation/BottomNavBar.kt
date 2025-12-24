@@ -27,12 +27,25 @@ data class BottomNavItem(
     val screen: Screen,
     val label: String,
     val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val unselectedIcon: ImageVector,
+    val nestedRoutes: List<String> = emptyList() // Routes that belong to this tab
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(Screen.Search, "Beranda", Icons.Filled.Home, Icons.Outlined.Home),
-    BottomNavItem(Screen.Collection, "Koleksi", Icons.Filled.LibraryMusic, Icons.Outlined.LibraryMusic)
+    BottomNavItem(
+        Screen.Search, 
+        "Beranda", 
+        Icons.Filled.Home, 
+        Icons.Outlined.Home,
+        nestedRoutes = listOf("ytm_playlist/{playlistId}", "album/{browseId}")
+    ),
+    BottomNavItem(
+        Screen.Collection, 
+        "Koleksi", 
+        Icons.Filled.LibraryMusic, 
+        Icons.Outlined.LibraryMusic,
+        nestedRoutes = listOf("downloads", "liked_songs", "playlist/{playlistId}")
+    )
 )
 
 @Composable
@@ -48,12 +61,22 @@ fun BottomNavBar(
         modifier = modifier
     ) {
         bottomNavItems.forEach { item ->
-            val selected = currentRoute == item.screen.route
+            // Check if current route is this tab OR a nested route of this tab
+            val isOnThisTab = currentRoute == item.screen.route
+            val isOnNestedRoute = item.nestedRoutes.any { nested ->
+                currentRoute?.startsWith(nested.substringBefore("{")) == true ||
+                currentRoute == nested
+            }
+            val selected = isOnThisTab || isOnNestedRoute
             
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (currentRoute != item.screen.route) {
+                    if (isOnNestedRoute) {
+                        // Pop back to the tab's root screen
+                        navController.popBackStack(item.screen.route, inclusive = false)
+                    } else if (!isOnThisTab) {
+                        // Navigate to this tab
                         navController.navigate(item.screen.route) {
                             popUpTo(navController.graph.startDestinationId) {
                                 saveState = true
@@ -62,6 +85,7 @@ fun BottomNavBar(
                             restoreState = true
                         }
                     }
+                    // If already on this tab's root, do nothing
                 },
                 icon = {
                     Icon(

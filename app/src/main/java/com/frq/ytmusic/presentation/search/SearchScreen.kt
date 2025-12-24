@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -54,6 +55,7 @@ import com.frq.ytmusic.presentation.playlist.components.AddToPlaylistDialog
 import com.frq.ytmusic.presentation.playlist.components.CreatePlaylistDialog
 import com.frq.ytmusic.presentation.search.components.PlaylistItem
 import com.frq.ytmusic.presentation.search.components.AlbumItem
+import com.frq.ytmusic.presentation.search.components.ArtistItem
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -67,6 +69,7 @@ fun SearchScreen(
     onSongClick: (List<Song>, Int) -> Unit,
     onPlaylistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
     activeSongId: String? = null,
     isPlaying: Boolean = false
 ) {
@@ -79,6 +82,11 @@ fun SearchScreen(
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var activeSongToAdd by remember { mutableStateOf<Song?>(null) }
+    
+    // Expand states for sections
+    var playlistsExpanded by remember { mutableStateOf(false) }
+    var albumsExpanded by remember { mutableStateOf(false) }
+    var artistsExpanded by remember { mutableStateOf(false) }
 
     // Hide keyboard when scrolling
     LaunchedEffect(listState) {
@@ -193,6 +201,33 @@ fun SearchScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
+                        // Top 3 Songs Section (at the very top)
+                        if (uiState.songs.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Lagu Teratas",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            val topSongs = uiState.songs.take(3)
+                            itemsIndexed(topSongs) { index, song ->
+                                SongItem(
+                                    song = song,
+                                    onClick = { 
+                                        keyboardController?.hide()
+                                        focusManager.clearFocus()
+                                        onSongClick(uiState.songs, index) 
+                                    },
+                                    isPlaying = activeSongId == song.videoId && isPlaying,
+                                    onAddToPlaylist = {
+                                        activeSongToAdd = song
+                                        showAddToPlaylistDialog = true
+                                    }
+                                )
+                            }
+                        }
+                        
                         // Playlists Section
                         if (uiState.playlists.isNotEmpty()) {
                             item {
@@ -202,7 +237,8 @@ fun SearchScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-                            items(uiState.playlists.take(5)) { playlist ->
+                            val playlistsToShow = if (playlistsExpanded) uiState.playlists else uiState.playlists.take(3)
+                            items(playlistsToShow) { playlist ->
                                 PlaylistItem(
                                     playlist = playlist,
                                     onClick = {
@@ -211,6 +247,22 @@ fun SearchScreen(
                                         onPlaylistClick(playlist.playlistId)
                                     }
                                 )
+                            }
+                            // Show More / Less button
+                            if (uiState.playlists.size > 3) {
+                                item {
+                                    TextButton(
+                                        onClick = { playlistsExpanded = !playlistsExpanded },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                    ) {
+                                        Text(
+                                            text = if (playlistsExpanded) "Tampilkan Sedikit" else "Lihat Semua (${uiState.playlists.size})",
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
                         }
                         
@@ -223,7 +275,8 @@ fun SearchScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-                            items(uiState.albums.take(5)) { album ->
+                            val albumsToShow = if (albumsExpanded) uiState.albums else uiState.albums.take(3)
+                            items(albumsToShow) { album ->
                                 AlbumItem(
                                     album = album,
                                     onClick = {
@@ -233,24 +286,70 @@ fun SearchScreen(
                                     }
                                 )
                             }
+                            // Show More / Less button
+                            if (uiState.albums.size > 3) {
+                                item {
+                                    TextButton(
+                                        onClick = { albumsExpanded = !albumsExpanded },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                    ) {
+                                        Text(
+                                            text = if (albumsExpanded) "Tampilkan Sedikit" else "Lihat Semua (${uiState.albums.size})",
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
                         }
                         
-                        // Songs Section
-                        if (uiState.songs.isNotEmpty()) {
-                            item {
+                        // Artists Section (simple, separate - max 3)
+                        if (uiState.artists.isNotEmpty()) {
+                            item(key = "artists_header") {
                                 Text(
-                                    text = "Lagu",
+                                    text = "Artis",
                                     style = MaterialTheme.typography.titleMedium,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                             }
-                            itemsIndexed(uiState.songs) { index, song ->
+                            items(
+                                items = uiState.artists.take(3),  // Limit to max 3
+                                key = { "artist_${it.browseId}" }
+                            ) { artist ->
+                                ArtistItem(
+                                    artist = artist,
+                                    onClick = {
+                                        keyboardController?.hide()
+                                        focusManager.clearFocus()
+                                        onArtistClick(artist.browseId)
+                                    }
+                                )
+                            }
+                        }
+                        
+                        // Remaining Songs Section
+                        if (uiState.songs.size > 3) {
+                            item(key = "remaining_songs_header") {
+                                Text(
+                                    text = "Lagu Lainnya",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            
+                            val remainingSongs = uiState.songs.drop(3)
+                            items(
+                                items = remainingSongs,
+                                key = { "song_${it.videoId}" }
+                            ) { song ->
+                                val fullIndex = uiState.songs.indexOf(song)
                                 SongItem(
                                     song = song,
                                     onClick = { 
                                         keyboardController?.hide()
                                         focusManager.clearFocus()
-                                        onSongClick(uiState.songs, index) 
+                                        onSongClick(uiState.songs, fullIndex) 
                                     },
                                     isPlaying = activeSongId == song.videoId && isPlaying,
                                     onAddToPlaylist = {

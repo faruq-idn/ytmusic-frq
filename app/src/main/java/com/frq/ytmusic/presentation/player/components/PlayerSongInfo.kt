@@ -1,6 +1,7 @@
 package com.frq.ytmusic.presentation.player.components
 
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ fun PlayerSongInfo(
     downloadState: DownloadState,
     onFavoriteClick: () -> Unit,
     onDownloadClick: () -> Unit,
+    onArtistClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -72,7 +74,8 @@ fun PlayerSongInfo(
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.7f),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable(onClick = onArtistClick)
             )
         }
         

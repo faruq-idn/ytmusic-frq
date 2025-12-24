@@ -2,6 +2,7 @@ package com.frq.ytmusic.data.remote.api
 
 import com.frq.ytmusic.data.remote.dto.AlbumDetailDto
 import com.frq.ytmusic.data.remote.dto.ApiResponse
+import com.frq.ytmusic.data.remote.dto.ArtistDetailDto
 import com.frq.ytmusic.data.remote.dto.MetadataResponseDto
 import com.frq.ytmusic.data.remote.dto.PlaylistDetailDto
 import com.frq.ytmusic.data.remote.dto.RelatedResponseDto
@@ -84,4 +85,12 @@ interface YtMusicApi {
     suspend fun getAlbum(
         @Path("browse_id") browseId: String
     ): ApiResponse<AlbumDetailDto>
+
+    /**
+     * Get artist details with songs and albums.
+     */
+    @GET("api/v1/artist/{browse_id}")
+    suspend fun getArtist(
+        @Path("browse_id") browseId: String
+    ): ApiResponse<ArtistDetailDto>
 }

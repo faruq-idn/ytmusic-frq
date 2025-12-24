@@ -8,6 +8,7 @@ data class Song(
     val videoId: String,
     val title: String,
     val artist: String,
+    val artistId: String? = null,  // browseId for direct artist navigation
     val album: String? = null,
     val durationText: String? = null,
     val thumbnailUrl: String? = null

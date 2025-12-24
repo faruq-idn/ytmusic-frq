@@ -15,6 +15,7 @@ import com.frq.ytmusic.presentation.search.SearchScreen
 import com.frq.ytmusic.presentation.playlist.PlaylistDetailScreen
 import com.frq.ytmusic.presentation.ytmplaylist.YtmPlaylistDetailScreen
 import com.frq.ytmusic.presentation.ytmalbum.YtmAlbumDetailScreen
+import com.frq.ytmusic.presentation.ytmartist.YtmArtistDetailScreen
 
 /**
  * Navigation graph for the app.
@@ -39,6 +40,9 @@ fun NavGraph(
                 },
                 onAlbumClick = { browseId ->
                     navController.navigate(Screen.AlbumDetail(browseId).route)
+                },
+                onArtistClick = { browseId ->
+                    navController.navigate(Screen.ArtistDetail(browseId).route)
                 },
                 activeSongId = activeSongId,
                 isPlaying = isPlaying
@@ -112,6 +116,37 @@ fun NavGraph(
             YtmAlbumDetailScreen(
                 onBack = { navController.navigateUp() },
                 onSongClick = onSongClick
+            )
+        }
+        
+        composable(
+            route = Screen.ArtistDetail.route,
+            arguments = listOf(
+                navArgument("browseId") { type = NavType.StringType }
+            )
+        ) {
+            YtmArtistDetailScreen(
+                onBack = { navController.navigateUp() },
+                onSongClick = onSongClick,
+                onAlbumClick = { browseId ->
+                    navController.navigate(Screen.AlbumDetail(browseId).route)
+                }
+            )
+        }
+        
+        composable(
+            route = Screen.ArtistByName.route,
+            arguments = listOf(
+                navArgument("artistName") { type = NavType.StringType }
+            )
+        ) {
+            YtmArtistDetailScreen(
+                onBack = { navController.navigateUp() },
+                onSongClick = onSongClick,
+                onAlbumClick = { browseId ->
+                    navController.navigate(Screen.AlbumDetail(browseId).route)
+                },
+                isByName = true
             )
         }
     }

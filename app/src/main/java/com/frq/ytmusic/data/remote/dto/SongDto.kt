@@ -15,6 +15,9 @@ data class SongDto(
     @SerializedName("artist")
     val artist: String,
     
+    @SerializedName("artist_id")
+    val artistId: String? = null,
+    
     @SerializedName("album")
     val album: String?,
     

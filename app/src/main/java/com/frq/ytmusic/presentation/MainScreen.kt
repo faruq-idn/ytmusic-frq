@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,8 @@ import com.frq.ytmusic.presentation.navigation.NavGraph
 import com.frq.ytmusic.presentation.player.MorphingPlayer
 import com.frq.ytmusic.presentation.player.PlayerViewModel
 import com.frq.ytmusic.presentation.player.components.TabOverlayContent
+import com.frq.ytmusic.presentation.navigation.Screen
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -37,6 +40,7 @@ fun MainScreen(
     playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
     val playerState by playerViewModel.playerState.collectAsState()
     val isFavorite by playerViewModel.isFavorite.collectAsState()
     val song = playerState.currentSong
@@ -152,7 +156,18 @@ fun MainScreen(
                         }
                     },
                     onExpand = { targetProgress = 1f },
-                    onCollapse = { targetProgress = 0f }
+                    onCollapse = { targetProgress = 0f },
+                    onArtistClick = { artistId, artistName ->
+                        // Collapse player and navigate
+                        targetProgress = 0f
+                        if (artistId != null) {
+                            // Direct navigation - no API call needed
+                            navController.navigate(Screen.ArtistDetail(artistId).route)
+                        } else {
+                            // Fallback: search by name on artist screen
+                            navController.navigate(Screen.ArtistByName(artistName).route)
+                        }
+                    }
                 )
             }
         }

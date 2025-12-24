@@ -61,7 +61,8 @@ fun MorphingPlayer(
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
     onExpand: () -> Unit,
-    onCollapse: () -> Unit
+    onCollapse: () -> Unit,
+    onArtistClick: (artistId: String?, artistName: String) -> Unit = { _, _ -> }
 ) {
     val playerState by playerViewModel.playerState.collectAsState()
     val song = playerState.currentSong ?: return
@@ -205,7 +206,8 @@ fun MorphingPlayer(
                         isFavorite = isFavorite,
                         downloadState = playerState.downloadState,
                         onFavoriteClick = { playerViewModel.toggleFavorite() },
-                        onDownloadClick = { playerViewModel.toggleDownload() }
+                        onDownloadClick = { playerViewModel.toggleDownload() },
+                        onArtistClick = { onArtistClick(song.artistId, song.artist) }
                     )
                     
                     PlayerSeekBar(

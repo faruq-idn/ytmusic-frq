@@ -4,6 +4,7 @@ import com.frq.ytmusic.domain.model.Lyrics
 import com.frq.ytmusic.domain.model.SearchResult
 import com.frq.ytmusic.domain.model.Song
 import com.frq.ytmusic.domain.model.YtmAlbumDetail
+import com.frq.ytmusic.domain.model.YtmArtistDetail
 import com.frq.ytmusic.domain.model.YtmPlaylistDetail
 
 /**
@@ -51,6 +52,16 @@ interface SongRepository {
      * Get YTM album detail with tracks.
      */
     suspend fun getAlbum(browseId: String): Result<YtmAlbumDetail>
+
+    /**
+     * Get YTM artist detail with songs and albums.
+     */
+    suspend fun getArtist(browseId: String): Result<YtmArtistDetail>
+
+    /**
+     * Search for artist by name and return the first matching browseId.
+     */
+    suspend fun findArtistBrowseId(artistName: String): String?
 }
 
 /**

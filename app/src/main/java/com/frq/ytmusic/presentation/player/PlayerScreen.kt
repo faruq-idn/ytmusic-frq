@@ -76,7 +76,8 @@ enum class BottomSheetType {
 @Composable
 fun PlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel(),
-    onCollapse: () -> Unit
+    onCollapse: () -> Unit,
+    onArtistClick: (String) -> Unit = {}  // artistName for search
 ) {
     val playerState by viewModel.playerState.collectAsState()
     val isFavorite by viewModel.isFavorite.collectAsState()
@@ -208,7 +209,8 @@ fun PlayerScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = Color.White.copy(alpha = 0.7f),
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.clickable { onArtistClick(song.artist) }
                                 )
                             }
 

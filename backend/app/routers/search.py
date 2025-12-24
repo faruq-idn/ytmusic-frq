@@ -16,21 +16,22 @@ router = APIRouter()
 async def search(
     q: str = Query(..., min_length=1, description="Search query"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of song results"),
-    type: Literal["all", "songs", "playlists", "albums"] = Query("all", description="Type of results")
+    type: Literal["all", "songs", "playlists", "albums", "artists"] = Query("all", description="Type of results")
 ):
     """
     Search for content on YouTube Music.
     
     - **q**: Search query (required)
     - **limit**: Max song results (1-50, default 20)
-    - **type**: Result type - "all", "songs", "playlists", or "albums" (default: all)
+    - **type**: Result type - "all", "songs", "playlists", "albums", or "artists" (default: all)
     
-    Returns list of songs, playlists, and/or albums based on type parameter.
+    Returns list of songs, playlists, albums, and/or artists based on type parameter.
     """
     try:
         songs = []
         playlists = []
         albums = []
+        artists = []
         
         if type in ["all", "songs"]:
             songs = yt_music_service.search_songs(q, limit)
@@ -43,7 +44,11 @@ async def search(
             album_limit = 5 if type == "all" else limit
             albums = yt_music_service.search_albums(q, album_limit)
         
-        total_count = len(songs) + len(playlists) + len(albums)
+        if type in ["all", "artists"]:
+            artist_limit = 2 if type == "all" else limit
+            artists = yt_music_service.search_artists(q, artist_limit)
+        
+        total_count = len(songs) + len(playlists) + len(albums) + len(artists)
         
         return ApiResponse(
             success=True,
@@ -51,6 +56,7 @@ async def search(
                 songs=songs,
                 playlists=playlists,
                 albums=albums,
+                artists=artists,
                 meta=SearchMeta(query=q, count=total_count)
             )
         )

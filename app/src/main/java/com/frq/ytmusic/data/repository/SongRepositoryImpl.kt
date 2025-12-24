@@ -2,12 +2,14 @@ package com.frq.ytmusic.data.repository
 
 import com.frq.ytmusic.data.remote.api.YtMusicApi
 import com.frq.ytmusic.data.remote.mapper.toAlbumDomainList
+import com.frq.ytmusic.data.remote.mapper.toArtistDomainList
 import com.frq.ytmusic.data.remote.mapper.toDomain
 import com.frq.ytmusic.data.remote.mapper.toDomainList
 import com.frq.ytmusic.data.remote.mapper.toPlaylistDomainList
 import com.frq.ytmusic.domain.model.SearchResult
 import com.frq.ytmusic.domain.model.Song
 import com.frq.ytmusic.domain.model.YtmAlbumDetail
+import com.frq.ytmusic.domain.model.YtmArtistDetail
 import com.frq.ytmusic.domain.model.YtmPlaylistDetail
 import com.frq.ytmusic.domain.repository.SongMetadata
 import com.frq.ytmusic.domain.repository.SongRepository
@@ -43,7 +45,8 @@ class SongRepositoryImpl @Inject constructor(
                     SearchResult(
                         songs = response.data.songs.toDomainList(),
                         playlists = response.data.playlists.toPlaylistDomainList(),
-                        albums = response.data.albums.toAlbumDomainList()
+                        albums = response.data.albums.toAlbumDomainList(),
+                        artists = response.data.artists.toArtistDomainList()
                     )
                 )
             } else {
@@ -131,5 +134,31 @@ class SongRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-}
 
+    override suspend fun getArtist(browseId: String): Result<YtmArtistDetail> {
+        return try {
+            val response = api.getArtist(browseId)
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(Exception(response.error ?: "Failed to get artist"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun findArtistBrowseId(artistName: String): String? {
+        return try {
+            val response = api.searchSongs(artistName)
+            if (response.success && response.data != null) {
+                // Return first artist's browseId if found
+                response.data.artists.firstOrNull()?.browseId
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+}

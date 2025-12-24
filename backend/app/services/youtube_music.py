@@ -9,6 +9,7 @@ from ytmusicapi import YTMusic
 from app.models.song import Song
 from app.models.playlist import Playlist
 from app.models.album import Album
+from app.models.artist import Artist
 from app.models.lyrics import LyricsData, LyricsLine
 from app.utils.thumbnail import transform_thumbnail_url
 
@@ -46,6 +47,7 @@ class YouTubeMusicService:
                 video_id=item.get("videoId", ""),
                 title=item.get("title", "Unknown"),
                 artist=self._get_artist_name(item),
+                artist_id=self._get_artist_id(item),
                 album=self._get_album_name(item),
                 duration_text=item.get("duration", ""),
                 thumbnail_url=thumbnail_url
@@ -161,6 +163,37 @@ class YouTubeMusicService:
         
         return albums
     
+    def search_artists(self, query: str, limit: int = 10) -> List[Artist]:
+        """
+        Search for artists on YouTube Music.
+        
+        Args:
+            query: Search query string
+            limit: Maximum number of results (default 10)
+        
+        Returns:
+            List of Artist objects
+        """
+        results = self._client.search(query, filter="artists", limit=limit)
+        
+        artists = []
+        for item in results:
+            # Get highest quality thumbnail
+            thumbnail_url = ""
+            if item.get("thumbnails"):
+                thumbnail_url = transform_thumbnail_url(
+                    item["thumbnails"][-1]["url"]
+                )
+            
+            artists.append(Artist(
+                browse_id=item.get("browseId", ""),
+                name=item.get("artist", "Unknown Artist"),
+                thumbnail_url=thumbnail_url,
+                subscribers=item.get("subscribers")
+            ))
+        
+        return artists
+    
     def get_album(self, browse_id: str) -> Optional[dict]:
         """
         Get album details including all tracks.
@@ -203,6 +236,7 @@ class YouTubeMusicService:
                     video_id=item.get("videoId", ""),
                     title=item.get("title", "Unknown"),
                     artist=self._get_artist_name(item),
+                    artist_id=self._get_artist_id(item),
                     album=data.get("title"),
                     duration_text=item.get("duration", ""),
                     thumbnail_url=song_thumbnail
@@ -220,6 +254,82 @@ class YouTubeMusicService:
             }
         except Exception as e:
             print(f"Error getting album: {e}")
+            return None
+    
+    def get_artist(self, browse_id: str) -> Optional[dict]:
+        """
+        Get artist details including top songs and albums.
+        
+        Args:
+            browse_id: YouTube Music artist browse ID
+        
+        Returns:
+            Dict with artist info, songs, and albums, or None if not found
+        """
+        try:
+            data = self._client.get_artist(browse_id)
+            
+            # Get thumbnail
+            thumbnail_url = ""
+            if data.get("thumbnails"):
+                thumbnail_url = transform_thumbnail_url(
+                    data["thumbnails"][-1]["url"]
+                )
+            
+            # Get description/subscribers
+            description = data.get("description", "")
+            subscribers = data.get("subscribers", "")
+            
+            # Parse top songs
+            songs = []
+            songs_data = data.get("songs", {})
+            if songs_data and songs_data.get("results"):
+                for item in songs_data["results"][:10]:  # Max 10 songs
+                    song_thumbnail = ""
+                    if item.get("thumbnails"):
+                        song_thumbnail = transform_thumbnail_url(
+                            item["thumbnails"][-1]["url"]
+                        )
+                    songs.append(Song(
+                        video_id=item.get("videoId", ""),
+                        title=item.get("title", "Unknown"),
+                        artist=self._get_artist_name(item),
+                        artist_id=self._get_artist_id(item),
+                        album=self._get_album_name(item),
+                        duration_text=item.get("duration", ""),
+                        thumbnail_url=song_thumbnail
+                    ))
+            
+            # Parse albums
+            albums = []
+            albums_data = data.get("albums", {})
+            if albums_data and albums_data.get("results"):
+                for item in albums_data["results"][:5]:  # Max 5 albums
+                    album_thumbnail = ""
+                    if item.get("thumbnails"):
+                        album_thumbnail = transform_thumbnail_url(
+                            item["thumbnails"][-1]["url"]
+                        )
+                    albums.append(Album(
+                        browse_id=item.get("browseId", ""),
+                        title=item.get("title", "Unknown Album"),
+                        artist=data.get("name"),
+                        thumbnail_url=album_thumbnail,
+                        year=item.get("year"),
+                        is_explicit=item.get("isExplicit", False)
+                    ))
+            
+            return {
+                "browse_id": browse_id,
+                "name": data.get("name", "Unknown Artist"),
+                "thumbnail_url": thumbnail_url,
+                "description": description,
+                "subscribers": subscribers,
+                "songs": songs,
+                "albums": albums
+            }
+        except Exception as e:
+            print(f"Error getting artist: {e}")
             return None
     
     def get_playlist(self, playlist_id: str) -> Optional[dict]:
@@ -422,7 +532,8 @@ class YouTubeMusicService:
             # Try to get synced lyrics from LRCLIB
             url = f"https://lrclib.net/api/get?artist_name={urllib.parse.quote(artist)}&track_name={urllib.parse.quote(title)}&duration={duration_sec}"
             
-            response = requests.get(url, timeout=5)
+            headers = {"User-Agent": "YTMusic Personal App/1.0"}
+            response = requests.get(url, timeout=10, headers=headers)
             if response.status_code != 200:
                 return None
             
@@ -498,6 +609,13 @@ class YouTubeMusicService:
         if artists:
             return artists[0].get("name", "Unknown Artist")
         return "Unknown Artist"
+    
+    def _get_artist_id(self, item: dict) -> Optional[str]:
+        """Extract artist browseId from item."""
+        artists = item.get("artists", [])
+        if artists:
+            return artists[0].get("id")  # browseId
+        return None
     
     def _get_album_name(self, item: dict) -> Optional[str]:
         """Extract album name from item."""

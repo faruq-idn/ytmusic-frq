@@ -23,6 +23,7 @@ fun SongDto.toDomain(): Song {
         videoId = videoId,
         title = title,
         artist = artist,
+        artistId = artistId,
         album = album,
         durationText = durationText,
         thumbnailUrl = thumbnailUrl
@@ -113,5 +114,30 @@ fun com.frq.ytmusic.data.remote.dto.AlbumDetailDto.toDomain(): com.frq.ytmusic.d
         trackCount = trackCount,
         duration = duration,
         songs = songs.toDomainList()
+    )
+}
+
+fun com.frq.ytmusic.data.remote.dto.ArtistDto.toDomain(): com.frq.ytmusic.domain.model.YtmArtist {
+    return com.frq.ytmusic.domain.model.YtmArtist(
+        browseId = browseId,
+        name = name,
+        thumbnailUrl = thumbnailUrl,
+        subscribers = subscribers
+    )
+}
+
+fun List<com.frq.ytmusic.data.remote.dto.ArtistDto>.toArtistDomainList(): List<com.frq.ytmusic.domain.model.YtmArtist> {
+    return map { it.toDomain() }
+}
+
+fun com.frq.ytmusic.data.remote.dto.ArtistDetailDto.toDomain(): com.frq.ytmusic.domain.model.YtmArtistDetail {
+    return com.frq.ytmusic.domain.model.YtmArtistDetail(
+        browseId = browseId,
+        name = name,
+        thumbnailUrl = thumbnailUrl,
+        description = description,
+        subscribers = subscribers,
+        songs = songs.toDomainList(),
+        albums = albums.toAlbumDomainList()
     )
 }
